@@ -73,10 +73,10 @@ class UserManagementAdmin(admin.PageAdmin):
                 "method": "get",
                 "url": "/api/user/list",
                 "data": {
-                    "page": "${page}",
-                    "per_page": "${perPage}",
-                    "user_name": "${user_name}",
-                    "is_active": "${is_active}"
+                    "page": "${page || 1 }",
+                    "per_page": "${perPage || 20}",
+                    "user_name": "${user_name || ''}",
+                    "is_active": "${is_active || ''}"
                 }
             },
             "body": {

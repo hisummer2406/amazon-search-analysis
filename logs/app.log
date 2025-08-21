@@ -2002,3 +2002,369 @@
 2025-08-21 19:27:35,827 - watchfiles.main - INFO - 6 changes detected
 2025-08-21 19:27:36,405 - watchfiles.main - INFO - 3 changes detected
 2025-08-21 19:27:37,039 - watchfiles.main - INFO - 3 changes detected
+2025-08-21 20:27:15,929 - main - INFO - 🚀 亚马逊搜索分析 v1.0.0 启动中...
+2025-08-21 20:27:15,930 - main - INFO - 📊 数据库Schema: analysis
+2025-08-21 20:27:15,930 - main - INFO - 📁 上传目录: uploads
+2025-08-21 20:27:15,930 - main - INFO - ⚙️ 批处理大小: 10000
+2025-08-21 20:27:15,930 - main - INFO - 🔍 查询天数限制: 7
+2025-08-21 20:27:15,930 - main - INFO - ✅ 上传目录初始化成功
+2025-08-21 20:27:16,064 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2025-08-21 20:27:16,064 - sqlalchemy.engine.Engine - INFO - [raw sql] {}
+2025-08-21 20:27:16,065 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2025-08-21 20:27:16,065 - sqlalchemy.engine.Engine - INFO - [raw sql] {}
+2025-08-21 20:27:16,066 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2025-08-21 20:27:16,066 - sqlalchemy.engine.Engine - INFO - [raw sql] {}
+2025-08-21 20:27:16,067 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-08-21 20:27:16,067 - sqlalchemy.engine.Engine - INFO - SELECT 1
+2025-08-21 20:27:16,067 - sqlalchemy.engine.Engine - INFO - [generated in 0.00015s] {}
+2025-08-21 20:27:16,068 - main - INFO - ✅ 同步数据库连接测试成功
+2025-08-21 20:27:16,068 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2025-08-21 20:27:16,101 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2025-08-21 20:27:16,101 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-08-21 20:27:16,102 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2025-08-21 20:27:16,102 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-08-21 20:27:16,104 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2025-08-21 20:27:16,104 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-08-21 20:27:16,104 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-08-21 20:27:16,105 - sqlalchemy.engine.Engine - INFO - SELECT 1
+2025-08-21 20:27:16,105 - sqlalchemy.engine.Engine - INFO - [generated in 0.00007s] ()
+2025-08-21 20:27:16,106 - sqlalchemy.engine.Engine - INFO - COMMIT
+2025-08-21 20:27:16,106 - main - INFO - ✅ 异步数据库连接测试成功
+2025-08-21 20:27:16,106 - main - INFO - 🎉 应用启动完成，准备接收请求
+2025-08-21 20:30:29,585 - watchfiles.main - INFO - 5 changes detected
+2025-08-21 20:30:29,701 - main - INFO - 🛑 应用正在关闭...
+2025-08-21 20:30:29,701 - main - ERROR - ❌ 同步数据库连接关闭失败: 'ConnectionEventsDispatch' object is not callable
+2025-08-21 20:30:29,715 - main - INFO - ✅ 异步数据库连接关闭成功
+2025-08-21 20:30:29,716 - main - INFO - 👋 应用已安全关闭
+2025-08-21 20:30:30,310 - watchfiles.main - INFO - 1 change detected
+2025-08-21 20:30:31,313 - main - INFO - 🚀 亚马逊搜索分析 v1.0.0 启动中...
+2025-08-21 20:30:31,313 - main - INFO - 📊 数据库Schema: analysis
+2025-08-21 20:30:31,313 - main - INFO - 📁 上传目录: uploads
+2025-08-21 20:30:31,313 - main - INFO - ⚙️ 批处理大小: 10000
+2025-08-21 20:30:31,313 - main - INFO - 🔍 查询天数限制: 7
+2025-08-21 20:30:31,313 - main - INFO - ✅ 上传目录初始化成功
+2025-08-21 20:30:31,346 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2025-08-21 20:30:31,346 - sqlalchemy.engine.Engine - INFO - [raw sql] {}
+2025-08-21 20:30:31,347 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2025-08-21 20:30:31,347 - sqlalchemy.engine.Engine - INFO - [raw sql] {}
+2025-08-21 20:30:31,348 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2025-08-21 20:30:31,348 - sqlalchemy.engine.Engine - INFO - [raw sql] {}
+2025-08-21 20:30:31,349 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-08-21 20:30:31,349 - sqlalchemy.engine.Engine - INFO - SELECT 1
+2025-08-21 20:30:31,349 - sqlalchemy.engine.Engine - INFO - [generated in 0.00010s] {}
+2025-08-21 20:30:31,349 - main - INFO - ✅ 同步数据库连接测试成功
+2025-08-21 20:30:31,349 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2025-08-21 20:30:31,377 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2025-08-21 20:30:31,377 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-08-21 20:30:31,378 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2025-08-21 20:30:31,378 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-08-21 20:30:31,379 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2025-08-21 20:30:31,379 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-08-21 20:30:31,380 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-08-21 20:30:31,380 - sqlalchemy.engine.Engine - INFO - SELECT 1
+2025-08-21 20:30:31,381 - sqlalchemy.engine.Engine - INFO - [generated in 0.00007s] ()
+2025-08-21 20:30:31,381 - sqlalchemy.engine.Engine - INFO - COMMIT
+2025-08-21 20:30:31,382 - main - INFO - ✅ 异步数据库连接测试成功
+2025-08-21 20:30:31,382 - main - INFO - 🎉 应用启动完成，准备接收请求
+2025-08-21 20:30:35,976 - watchfiles.main - INFO - 6 changes detected
+2025-08-21 20:30:36,137 - main - INFO - 🛑 应用正在关闭...
+2025-08-21 20:30:36,138 - main - ERROR - ❌ 同步数据库连接关闭失败: 'ConnectionEventsDispatch' object is not callable
+2025-08-21 20:30:36,146 - main - INFO - ✅ 异步数据库连接关闭成功
+2025-08-21 20:30:36,146 - main - INFO - 👋 应用已安全关闭
+2025-08-21 20:30:36,712 - watchfiles.main - INFO - 4 changes detected
+2025-08-21 20:30:37,562 - watchfiles.main - INFO - 3 changes detected
+2025-08-21 20:30:37,664 - main - INFO - 🚀 亚马逊搜索分析 v1.0.0 启动中...
+2025-08-21 20:30:37,664 - main - INFO - 📊 数据库Schema: analysis
+2025-08-21 20:30:37,664 - main - INFO - 📁 上传目录: uploads
+2025-08-21 20:30:37,664 - main - INFO - ⚙️ 批处理大小: 10000
+2025-08-21 20:30:37,664 - main - INFO - 🔍 查询天数限制: 7
+2025-08-21 20:30:37,664 - main - INFO - ✅ 上传目录初始化成功
+2025-08-21 20:30:37,699 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2025-08-21 20:30:37,699 - sqlalchemy.engine.Engine - INFO - [raw sql] {}
+2025-08-21 20:30:37,700 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2025-08-21 20:30:37,700 - sqlalchemy.engine.Engine - INFO - [raw sql] {}
+2025-08-21 20:30:37,700 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2025-08-21 20:30:37,700 - sqlalchemy.engine.Engine - INFO - [raw sql] {}
+2025-08-21 20:30:37,701 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-08-21 20:30:37,701 - sqlalchemy.engine.Engine - INFO - SELECT 1
+2025-08-21 20:30:37,701 - sqlalchemy.engine.Engine - INFO - [generated in 0.00010s] {}
+2025-08-21 20:30:37,702 - main - INFO - ✅ 同步数据库连接测试成功
+2025-08-21 20:30:37,702 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2025-08-21 20:30:37,731 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2025-08-21 20:30:37,732 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-08-21 20:30:37,734 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2025-08-21 20:30:37,734 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-08-21 20:30:37,735 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2025-08-21 20:30:37,735 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-08-21 20:30:37,737 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-08-21 20:30:37,737 - sqlalchemy.engine.Engine - INFO - SELECT 1
+2025-08-21 20:30:37,737 - sqlalchemy.engine.Engine - INFO - [generated in 0.00007s] ()
+2025-08-21 20:30:37,738 - sqlalchemy.engine.Engine - INFO - COMMIT
+2025-08-21 20:30:37,738 - main - INFO - ✅ 异步数据库连接测试成功
+2025-08-21 20:30:37,738 - main - INFO - 🎉 应用启动完成，准备接收请求
+2025-08-21 20:32:13,973 - watchfiles.main - INFO - 3 changes detected
+2025-08-21 20:32:39,487 - watchfiles.main - INFO - 6 changes detected
+2025-08-21 20:32:39,641 - main - INFO - 🛑 应用正在关闭...
+2025-08-21 20:32:39,642 - main - ERROR - ❌ 同步数据库连接关闭失败: 'ConnectionEventsDispatch' object is not callable
+2025-08-21 20:32:39,654 - main - INFO - ✅ 异步数据库连接关闭成功
+2025-08-21 20:32:39,654 - main - INFO - 👋 应用已安全关闭
+2025-08-21 20:32:40,317 - watchfiles.main - INFO - 4 changes detected
+2025-08-21 20:32:41,174 - watchfiles.main - INFO - 3 changes detected
+2025-08-21 20:32:41,588 - watchfiles.main - INFO - 3 changes detected
+2025-08-21 20:32:41,769 - main - INFO - 🚀 亚马逊搜索分析 v1.0.0 启动中...
+2025-08-21 20:32:41,770 - main - INFO - 📊 数据库Schema: analysis
+2025-08-21 20:32:41,770 - main - INFO - 📁 上传目录: uploads
+2025-08-21 20:32:41,770 - main - INFO - ⚙️ 批处理大小: 10000
+2025-08-21 20:32:41,770 - main - INFO - 🔍 查询天数限制: 7
+2025-08-21 20:32:41,770 - main - INFO - ✅ 上传目录初始化成功
+2025-08-21 20:32:41,810 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2025-08-21 20:32:41,810 - sqlalchemy.engine.Engine - INFO - [raw sql] {}
+2025-08-21 20:32:41,811 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2025-08-21 20:32:41,811 - sqlalchemy.engine.Engine - INFO - [raw sql] {}
+2025-08-21 20:32:41,812 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2025-08-21 20:32:41,812 - sqlalchemy.engine.Engine - INFO - [raw sql] {}
+2025-08-21 20:32:41,813 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-08-21 20:32:41,813 - sqlalchemy.engine.Engine - INFO - SELECT 1
+2025-08-21 20:32:41,813 - sqlalchemy.engine.Engine - INFO - [generated in 0.00011s] {}
+2025-08-21 20:32:41,813 - main - INFO - ✅ 同步数据库连接测试成功
+2025-08-21 20:32:41,814 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2025-08-21 20:32:41,836 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2025-08-21 20:32:41,836 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-08-21 20:32:41,837 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2025-08-21 20:32:41,838 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-08-21 20:32:41,839 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2025-08-21 20:32:41,839 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-08-21 20:32:41,840 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-08-21 20:32:41,840 - sqlalchemy.engine.Engine - INFO - SELECT 1
+2025-08-21 20:32:41,840 - sqlalchemy.engine.Engine - INFO - [generated in 0.00007s] ()
+2025-08-21 20:32:41,841 - sqlalchemy.engine.Engine - INFO - COMMIT
+2025-08-21 20:32:41,842 - main - INFO - ✅ 异步数据库连接测试成功
+2025-08-21 20:32:41,842 - main - INFO - 🎉 应用启动完成，准备接收请求
+2025-08-21 20:32:55,934 - watchfiles.main - INFO - 6 changes detected
+2025-08-21 20:32:56,099 - main - INFO - 🛑 应用正在关闭...
+2025-08-21 20:32:56,100 - main - ERROR - ❌ 同步数据库连接关闭失败: 'ConnectionEventsDispatch' object is not callable
+2025-08-21 20:32:56,115 - main - INFO - ✅ 异步数据库连接关闭成功
+2025-08-21 20:32:56,115 - main - INFO - 👋 应用已安全关闭
+2025-08-21 20:32:56,727 - watchfiles.main - INFO - 1 change detected
+2025-08-21 20:32:57,512 - watchfiles.main - INFO - 6 changes detected
+2025-08-21 20:32:57,630 - main - INFO - 🚀 亚马逊搜索分析 v1.0.0 启动中...
+2025-08-21 20:32:57,630 - main - INFO - 📊 数据库Schema: analysis
+2025-08-21 20:32:57,630 - main - INFO - 📁 上传目录: uploads
+2025-08-21 20:32:57,630 - main - INFO - ⚙️ 批处理大小: 10000
+2025-08-21 20:32:57,630 - main - INFO - 🔍 查询天数限制: 7
+2025-08-21 20:32:57,630 - main - INFO - ✅ 上传目录初始化成功
+2025-08-21 20:32:57,670 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2025-08-21 20:32:57,670 - sqlalchemy.engine.Engine - INFO - [raw sql] {}
+2025-08-21 20:32:57,671 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2025-08-21 20:32:57,671 - sqlalchemy.engine.Engine - INFO - [raw sql] {}
+2025-08-21 20:32:57,672 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2025-08-21 20:32:57,672 - sqlalchemy.engine.Engine - INFO - [raw sql] {}
+2025-08-21 20:32:57,672 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-08-21 20:32:57,673 - sqlalchemy.engine.Engine - INFO - SELECT 1
+2025-08-21 20:32:57,673 - sqlalchemy.engine.Engine - INFO - [generated in 0.00010s] {}
+2025-08-21 20:32:57,673 - main - INFO - ✅ 同步数据库连接测试成功
+2025-08-21 20:32:57,673 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2025-08-21 20:32:57,695 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2025-08-21 20:32:57,695 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-08-21 20:32:57,697 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2025-08-21 20:32:57,697 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-08-21 20:32:57,698 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2025-08-21 20:32:57,698 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-08-21 20:32:57,699 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-08-21 20:32:57,699 - sqlalchemy.engine.Engine - INFO - SELECT 1
+2025-08-21 20:32:57,699 - sqlalchemy.engine.Engine - INFO - [generated in 0.00007s] ()
+2025-08-21 20:32:57,700 - sqlalchemy.engine.Engine - INFO - COMMIT
+2025-08-21 20:32:57,701 - main - INFO - ✅ 异步数据库连接测试成功
+2025-08-21 20:32:57,701 - main - INFO - 🎉 应用启动完成，准备接收请求
+2025-08-21 20:33:03,548 - watchfiles.main - INFO - 6 changes detected
+2025-08-21 20:33:03,692 - main - INFO - 🛑 应用正在关闭...
+2025-08-21 20:33:03,693 - main - ERROR - ❌ 同步数据库连接关闭失败: 'ConnectionEventsDispatch' object is not callable
+2025-08-21 20:33:03,701 - main - INFO - ✅ 异步数据库连接关闭成功
+2025-08-21 20:33:03,701 - main - INFO - 👋 应用已安全关闭
+2025-08-21 20:33:04,290 - watchfiles.main - INFO - 4 changes detected
+2025-08-21 20:33:05,240 - watchfiles.main - INFO - 3 changes detected
+2025-08-21 20:33:05,367 - main - INFO - 🚀 亚马逊搜索分析 v1.0.0 启动中...
+2025-08-21 20:33:05,367 - main - INFO - 📊 数据库Schema: analysis
+2025-08-21 20:33:05,367 - main - INFO - 📁 上传目录: uploads
+2025-08-21 20:33:05,367 - main - INFO - ⚙️ 批处理大小: 10000
+2025-08-21 20:33:05,367 - main - INFO - 🔍 查询天数限制: 7
+2025-08-21 20:33:05,367 - main - INFO - ✅ 上传目录初始化成功
+2025-08-21 20:33:05,398 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2025-08-21 20:33:05,398 - sqlalchemy.engine.Engine - INFO - [raw sql] {}
+2025-08-21 20:33:05,399 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2025-08-21 20:33:05,399 - sqlalchemy.engine.Engine - INFO - [raw sql] {}
+2025-08-21 20:33:05,400 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2025-08-21 20:33:05,400 - sqlalchemy.engine.Engine - INFO - [raw sql] {}
+2025-08-21 20:33:05,401 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-08-21 20:33:05,401 - sqlalchemy.engine.Engine - INFO - SELECT 1
+2025-08-21 20:33:05,401 - sqlalchemy.engine.Engine - INFO - [generated in 0.00010s] {}
+2025-08-21 20:33:05,402 - main - INFO - ✅ 同步数据库连接测试成功
+2025-08-21 20:33:05,402 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2025-08-21 20:33:05,424 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2025-08-21 20:33:05,424 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-08-21 20:33:05,426 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2025-08-21 20:33:05,426 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-08-21 20:33:05,427 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2025-08-21 20:33:05,427 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-08-21 20:33:05,428 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-08-21 20:33:05,429 - sqlalchemy.engine.Engine - INFO - SELECT 1
+2025-08-21 20:33:05,429 - sqlalchemy.engine.Engine - INFO - [generated in 0.00007s] ()
+2025-08-21 20:33:05,430 - sqlalchemy.engine.Engine - INFO - COMMIT
+2025-08-21 20:33:05,430 - main - INFO - ✅ 异步数据库连接测试成功
+2025-08-21 20:33:05,430 - main - INFO - 🎉 应用启动完成，准备接收请求
+2025-08-21 20:33:07,203 - watchfiles.main - INFO - 6 changes detected
+2025-08-21 20:33:07,350 - main - INFO - 🛑 应用正在关闭...
+2025-08-21 20:33:07,350 - main - ERROR - ❌ 同步数据库连接关闭失败: 'ConnectionEventsDispatch' object is not callable
+2025-08-21 20:33:07,359 - main - INFO - ✅ 异步数据库连接关闭成功
+2025-08-21 20:33:07,360 - main - INFO - 👋 应用已安全关闭
+2025-08-21 20:33:08,112 - watchfiles.main - INFO - 1 change detected
+2025-08-21 20:33:08,793 - watchfiles.main - INFO - 3 changes detected
+2025-08-21 20:33:08,864 - main - INFO - 🚀 亚马逊搜索分析 v1.0.0 启动中...
+2025-08-21 20:33:08,864 - main - INFO - 📊 数据库Schema: analysis
+2025-08-21 20:33:08,864 - main - INFO - 📁 上传目录: uploads
+2025-08-21 20:33:08,864 - main - INFO - ⚙️ 批处理大小: 10000
+2025-08-21 20:33:08,864 - main - INFO - 🔍 查询天数限制: 7
+2025-08-21 20:33:08,864 - main - INFO - ✅ 上传目录初始化成功
+2025-08-21 20:33:08,897 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2025-08-21 20:33:08,897 - sqlalchemy.engine.Engine - INFO - [raw sql] {}
+2025-08-21 20:33:08,898 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2025-08-21 20:33:08,898 - sqlalchemy.engine.Engine - INFO - [raw sql] {}
+2025-08-21 20:33:08,899 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2025-08-21 20:33:08,899 - sqlalchemy.engine.Engine - INFO - [raw sql] {}
+2025-08-21 20:33:08,901 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-08-21 20:33:08,901 - sqlalchemy.engine.Engine - INFO - SELECT 1
+2025-08-21 20:33:08,901 - sqlalchemy.engine.Engine - INFO - [generated in 0.00016s] {}
+2025-08-21 20:33:08,901 - main - INFO - ✅ 同步数据库连接测试成功
+2025-08-21 20:33:08,902 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2025-08-21 20:33:08,923 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2025-08-21 20:33:08,923 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-08-21 20:33:08,925 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2025-08-21 20:33:08,925 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-08-21 20:33:08,926 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2025-08-21 20:33:08,927 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-08-21 20:33:08,928 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-08-21 20:33:08,928 - sqlalchemy.engine.Engine - INFO - SELECT 1
+2025-08-21 20:33:08,928 - sqlalchemy.engine.Engine - INFO - [generated in 0.00007s] ()
+2025-08-21 20:33:08,929 - sqlalchemy.engine.Engine - INFO - COMMIT
+2025-08-21 20:33:08,929 - main - INFO - ✅ 异步数据库连接测试成功
+2025-08-21 20:33:08,929 - main - INFO - 🎉 应用启动完成，准备接收请求
+2025-08-21 20:33:13,007 - watchfiles.main - INFO - 6 changes detected
+2025-08-21 20:33:13,177 - main - INFO - 🛑 应用正在关闭...
+2025-08-21 20:33:13,177 - main - ERROR - ❌ 同步数据库连接关闭失败: 'ConnectionEventsDispatch' object is not callable
+2025-08-21 20:33:13,201 - main - INFO - ✅ 异步数据库连接关闭成功
+2025-08-21 20:33:13,201 - main - INFO - 👋 应用已安全关闭
+2025-08-21 20:33:13,778 - watchfiles.main - INFO - 1 change detected
+2025-08-21 20:33:14,143 - watchfiles.main - INFO - 6 changes detected
+2025-08-21 20:33:15,204 - watchfiles.main - INFO - 3 changes detected
+2025-08-21 20:33:15,311 - main - INFO - 🚀 亚马逊搜索分析 v1.0.0 启动中...
+2025-08-21 20:33:15,311 - main - INFO - 📊 数据库Schema: analysis
+2025-08-21 20:33:15,311 - main - INFO - 📁 上传目录: uploads
+2025-08-21 20:33:15,311 - main - INFO - ⚙️ 批处理大小: 10000
+2025-08-21 20:33:15,311 - main - INFO - 🔍 查询天数限制: 7
+2025-08-21 20:33:15,311 - main - INFO - ✅ 上传目录初始化成功
+2025-08-21 20:33:15,349 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2025-08-21 20:33:15,349 - sqlalchemy.engine.Engine - INFO - [raw sql] {}
+2025-08-21 20:33:15,351 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2025-08-21 20:33:15,351 - sqlalchemy.engine.Engine - INFO - [raw sql] {}
+2025-08-21 20:33:15,352 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2025-08-21 20:33:15,352 - sqlalchemy.engine.Engine - INFO - [raw sql] {}
+2025-08-21 20:33:15,353 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-08-21 20:33:15,353 - sqlalchemy.engine.Engine - INFO - SELECT 1
+2025-08-21 20:33:15,353 - sqlalchemy.engine.Engine - INFO - [generated in 0.00013s] {}
+2025-08-21 20:33:15,354 - main - INFO - ✅ 同步数据库连接测试成功
+2025-08-21 20:33:15,354 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2025-08-21 20:33:15,378 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2025-08-21 20:33:15,378 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-08-21 20:33:15,381 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2025-08-21 20:33:15,381 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-08-21 20:33:15,383 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2025-08-21 20:33:15,383 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-08-21 20:33:15,384 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-08-21 20:33:15,384 - sqlalchemy.engine.Engine - INFO - SELECT 1
+2025-08-21 20:33:15,384 - sqlalchemy.engine.Engine - INFO - [generated in 0.00006s] ()
+2025-08-21 20:33:15,385 - sqlalchemy.engine.Engine - INFO - COMMIT
+2025-08-21 20:33:15,386 - main - INFO - ✅ 异步数据库连接测试成功
+2025-08-21 20:33:15,386 - main - INFO - 🎉 应用启动完成，准备接收请求
+2025-08-21 20:34:34,181 - watchfiles.main - INFO - 6 changes detected
+2025-08-21 20:34:34,366 - main - INFO - 🛑 应用正在关闭...
+2025-08-21 20:34:34,366 - main - ERROR - ❌ 同步数据库连接关闭失败: 'ConnectionEventsDispatch' object is not callable
+2025-08-21 20:34:34,378 - main - INFO - ✅ 异步数据库连接关闭成功
+2025-08-21 20:34:34,379 - main - INFO - 👋 应用已安全关闭
+2025-08-21 20:34:34,988 - watchfiles.main - INFO - 1 change detected
+2025-08-21 20:34:36,008 - main - INFO - 🚀 亚马逊搜索分析 v1.0.0 启动中...
+2025-08-21 20:34:36,008 - main - INFO - 📊 数据库Schema: analysis
+2025-08-21 20:34:36,008 - main - INFO - 📁 上传目录: uploads
+2025-08-21 20:34:36,008 - main - INFO - ⚙️ 批处理大小: 10000
+2025-08-21 20:34:36,008 - main - INFO - 🔍 查询天数限制: 7
+2025-08-21 20:34:36,008 - main - INFO - ✅ 上传目录初始化成功
+2025-08-21 20:34:36,050 - watchfiles.main - INFO - 3 changes detected
+2025-08-21 20:34:36,050 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2025-08-21 20:34:36,051 - sqlalchemy.engine.Engine - INFO - [raw sql] {}
+2025-08-21 20:34:36,053 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2025-08-21 20:34:36,053 - sqlalchemy.engine.Engine - INFO - [raw sql] {}
+2025-08-21 20:34:36,055 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2025-08-21 20:34:36,055 - sqlalchemy.engine.Engine - INFO - [raw sql] {}
+2025-08-21 20:34:36,056 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-08-21 20:34:36,056 - sqlalchemy.engine.Engine - INFO - SELECT 1
+2025-08-21 20:34:36,056 - sqlalchemy.engine.Engine - INFO - [generated in 0.00013s] {}
+2025-08-21 20:34:36,057 - main - INFO - ✅ 同步数据库连接测试成功
+2025-08-21 20:34:36,057 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2025-08-21 20:34:36,080 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2025-08-21 20:34:36,080 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-08-21 20:34:36,082 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2025-08-21 20:34:36,082 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-08-21 20:34:36,083 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2025-08-21 20:34:36,083 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-08-21 20:34:36,084 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-08-21 20:34:36,085 - sqlalchemy.engine.Engine - INFO - SELECT 1
+2025-08-21 20:34:36,085 - sqlalchemy.engine.Engine - INFO - [generated in 0.00007s] ()
+2025-08-21 20:34:36,085 - sqlalchemy.engine.Engine - INFO - COMMIT
+2025-08-21 20:34:36,086 - main - INFO - ✅ 异步数据库连接测试成功
+2025-08-21 20:34:36,086 - main - INFO - 🎉 应用启动完成，准备接收请求
+2025-08-21 20:35:00,363 - watchfiles.main - INFO - 3 changes detected
+2025-08-21 20:35:00,831 - watchfiles.main - INFO - 3 changes detected
+2025-08-21 20:35:24,759 - watchfiles.main - INFO - 6 changes detected
+2025-08-21 20:35:24,897 - main - INFO - 🛑 应用正在关闭...
+2025-08-21 20:35:24,897 - main - ERROR - ❌ 同步数据库连接关闭失败: 'ConnectionEventsDispatch' object is not callable
+2025-08-21 20:35:24,916 - main - INFO - ✅ 异步数据库连接关闭成功
+2025-08-21 20:35:24,916 - main - INFO - 👋 应用已安全关闭
+2025-08-21 20:35:25,570 - watchfiles.main - INFO - 1 change detected
+2025-08-21 20:35:26,474 - watchfiles.main - INFO - 3 changes detected
+2025-08-21 20:35:26,713 - main - INFO - 🚀 亚马逊搜索分析 v1.0.0 启动中...
+2025-08-21 20:35:26,714 - main - INFO - 📊 数据库Schema: analysis
+2025-08-21 20:35:26,714 - main - INFO - 📁 上传目录: uploads
+2025-08-21 20:35:26,714 - main - INFO - ⚙️ 批处理大小: 10000
+2025-08-21 20:35:26,714 - main - INFO - 🔍 查询天数限制: 7
+2025-08-21 20:35:26,714 - main - INFO - ✅ 上传目录初始化成功
+2025-08-21 20:35:26,850 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2025-08-21 20:35:26,850 - sqlalchemy.engine.Engine - INFO - [raw sql] {}
+2025-08-21 20:35:26,857 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2025-08-21 20:35:26,857 - sqlalchemy.engine.Engine - INFO - [raw sql] {}
+2025-08-21 20:35:26,860 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2025-08-21 20:35:26,860 - sqlalchemy.engine.Engine - INFO - [raw sql] {}
+2025-08-21 20:35:26,864 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-08-21 20:35:26,864 - sqlalchemy.engine.Engine - INFO - SELECT 1
+2025-08-21 20:35:26,864 - sqlalchemy.engine.Engine - INFO - [generated in 0.00017s] {}
+2025-08-21 20:35:26,867 - main - INFO - ✅ 同步数据库连接测试成功
+2025-08-21 20:35:26,868 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2025-08-21 20:35:26,914 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2025-08-21 20:35:26,914 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-08-21 20:35:26,916 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2025-08-21 20:35:26,916 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-08-21 20:35:26,918 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2025-08-21 20:35:26,918 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2025-08-21 20:35:26,919 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2025-08-21 20:35:26,919 - sqlalchemy.engine.Engine - INFO - SELECT 1
+2025-08-21 20:35:26,919 - sqlalchemy.engine.Engine - INFO - [generated in 0.00006s] ()
+2025-08-21 20:35:26,920 - sqlalchemy.engine.Engine - INFO - COMMIT
+2025-08-21 20:35:26,920 - main - INFO - ✅ 异步数据库连接测试成功
+2025-08-21 20:35:26,920 - main - INFO - 🎉 应用启动完成，准备接收请求
+2025-08-21 20:35:27,004 - watchfiles.main - INFO - 3 changes detected
+2025-08-21 20:35:28,589 - watchfiles.main - INFO - 3 changes detected
+2025-08-21 20:35:45,787 - watchfiles.main - INFO - 3 changes detected
+2025-08-21 20:35:53,737 - watchfiles.main - INFO - 3 changes detected
+2025-08-21 20:35:54,101 - watchfiles.main - INFO - 3 changes detected
+2025-08-21 20:35:58,597 - main - INFO - 🛑 应用正在关闭...
+2025-08-21 20:35:58,597 - main - ERROR - ❌ 同步数据库连接关闭失败: 'ConnectionEventsDispatch' object is not callable
+2025-08-21 20:35:58,616 - main - INFO - ✅ 异步数据库连接关闭成功
+2025-08-21 20:35:58,616 - main - INFO - 👋 应用已安全关闭

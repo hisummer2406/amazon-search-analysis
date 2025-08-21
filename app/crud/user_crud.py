@@ -180,7 +180,7 @@ class UserCenterCRUD:
                     return False, "用户名已被其他用户使用", None
 
             # 更新字段
-            update_data = user_data.dict(exclude_unset=True)
+            update_data = user_data.model_dump(exclude_unset=True)
 
             # 如果包含密码，需要加密
             if 'password' in update_data:

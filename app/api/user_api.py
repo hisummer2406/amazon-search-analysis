@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from pydantic import Field
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -21,10 +21,10 @@ user_router = APIRouter()
 
 @user_router.get("/list", response_model=Dict[str, Any])
 async def get_users_list(
-        page: int = Field(1, ge=1, description="页码"),
-        per_page: int = Field(20, ge=1, le=100, description="每页数量"),
-        user_name: Optional[str] = Field(None, description="搜索关键词"),
-        is_active: Optional[bool] = Field(None, description="用户状态筛选"),
+        page: int = Query(1, ge=1, description="页码"),
+        per_page: int = Query(20, ge=1, le=100, description="每页数量"),
+        user_name: Optional[str] = Query(None, description="搜索关键词"),
+        is_active: Optional[bool] = Query(None, description="用户状态筛选"),
         db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """获取用户列表 - 支持分页和搜索"""
@@ -136,7 +136,7 @@ async def register(
                 "created_at": user.created_at.isoformat()
             }
         }
-    except HTTPException as e:
+    except Exception as e:
         logger.error(f"创建用户失败: {e}")
         raise HTTPException(status_code=500, detail="创建用户失败")
 
