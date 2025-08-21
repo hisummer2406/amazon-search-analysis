@@ -8,7 +8,7 @@ from fastapi_amis_admin.admin.settings import Settings
 
 
 class CustomAdminSite(AdminSite):
-    """自定义管理站点，移除默认的系统信息页面"""
+    """自定义管理站点，移除默认的系统信息页面并设置侧边栏默认收起"""
 
     def __init__(self, settings: Settings):
         super().__init__(settings)
