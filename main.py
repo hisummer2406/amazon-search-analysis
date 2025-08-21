@@ -6,10 +6,12 @@ from fastapi import FastAPI
 from sqlalchemy import text
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
 
+from app.api.router import api_router
 from config import settings
 from database import engine, async_engine
-from app.admin.adminsite import site
+from app.admin.site import site
 
 
 # 配置应用日志，每天自动生成新文件
@@ -111,13 +113,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-"""挂载AdminSite"""
+# 挂载静态文件目录
 app.mount("/static", StaticFiles(directory="static"), name="static")
+# 挂载后台管理系统
 site.mount_app(app)
+#注册API路由
+app.include_router(api_router)
 
 @app.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return RedirectResponse(url="/admin/")
 
 @app.get("/health")
 async def health_check():

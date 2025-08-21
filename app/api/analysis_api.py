@@ -7,9 +7,9 @@ from fastapi_amis_admin.amis import Page
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+analysis_router = APIRouter()
 
-@router.get("/search")
+@analysis_router.get("/search")
 async def search_data()->Dict[str , Any]:
     pass
 

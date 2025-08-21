@@ -1,21 +1,11 @@
-from fastapi_amis_admin.admin import AdminSite, Settings
 from fastapi_amis_admin.admin import admin
 from fastapi_amis_admin.amis import PageSchema, Page
-
-from config import settings
-
-site = AdminSite(
-    settings=Settings(
-        site_title= settings.APP_NAME,
-        site_icon="/static/amazon_logo.png",
-        database_url_async= settings.DATABASE_URL_ASYNC,
-    )
-)
+from app.admin.admin_site import site
 
 #主要数据查询页面
-@site.site.register_admin
+@site.register_admin
 class AmazonDataQueryAdmin(admin.PageAdmin):
-    page_schema = PageSchema(label="亚马逊数据查询", icon="fa fa-search")
+    page_schema = PageSchema(label="数据查询", icon="fa fa-search")
 
     async def get_page(self, request) -> Page:
         # 顶部搜索条件区域

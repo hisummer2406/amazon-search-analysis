@@ -1,6 +1,6 @@
 import logging
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, MetaData
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 """SQLAlchemy 2.0 数据库模型基类"""
 class Base(DeclarativeBase):
-    pass
+    metadata = MetaData(schema=settings.DATABASE_SCHEMA)
 
 """数据库连接配置"""
 # 同步数据引擎
