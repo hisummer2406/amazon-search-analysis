@@ -86,21 +86,6 @@ class UploadComponent:
                     },
                     {
                         "type": "divider"
-                    },
-                    {
-                        "type": "tpl",
-                        "tpl": """
-                        <div class="upload-requirements">
-                            <h5>文件要求：</h5>
-                            <ul>
-                                <li>文件格式：CSV (.csv)</li>
-                                <li>编码格式：UTF-8</li>
-                                <li>文件大小：最大3GB</li>
-                                <li>列分隔符：逗号 (,)</li>
-                            </ul>
-                        </div>
-                        """,
-                        "className": "text-muted"
                     }
                 ],
                 "redirect": "/admin/data-analysis",
