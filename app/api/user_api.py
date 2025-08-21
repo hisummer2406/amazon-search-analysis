@@ -24,7 +24,7 @@ async def get_users_list(
         page: int = Query(1, ge=1, description="页码"),
         per_page: int = Query(20, ge=1, le=100, description="每页数量"),
         user_name: Optional[str] = Query(None, description="搜索关键词"),
-        is_active: Optional[bool] = Query(None, description="用户状态筛选"),
+        is_active: Optional[bool] = Query(default=True, description="用户状态筛选"),
         db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """获取用户列表 - 支持分页和搜索"""

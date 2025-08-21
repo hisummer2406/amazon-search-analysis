@@ -35,11 +35,11 @@ class UserManagementAdmin(admin.PageAdmin):
                             "type": "select",
                             "name": "is_active",
                             "label": "用户状态:",
-                            "placeholder": "全部",
+                            "placeholder": "激活",
                             "size": "sm",
+                            "value": True,
                             "className": "min-w-[160px] z-50",
                             "options": [
-                                {"label": "全部", "value": ""},
                                 {"label": "激活", "value": True},
                                 {"label": "禁用", "value": False}
                             ],
@@ -76,7 +76,7 @@ class UserManagementAdmin(admin.PageAdmin):
                     "page": "${page || 1 }",
                     "per_page": "${perPage || 20}",
                     "user_name": "${user_name || ''}",
-                    "is_active": "${is_active || ''}"
+                    "is_active": "${is_active}"
                 }
             },
             "body": {
