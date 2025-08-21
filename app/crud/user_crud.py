@@ -264,24 +264,3 @@ class UserCenterCRUD:
         except Exception as e:
             logger.error(f"切换用户状态失败: {e}")
             return False, f"状态切换失败: {str(e)}", None
-
-    def reset_user_password(self, user_id: int, new_password: str) -> Tuple[bool, str]:
-        """重置用户密码"""
-        try:
-            user = self.get_user_by_id(user_id)
-            if not user:
-                return False, "用户不存在"
-
-            # 更新密码
-            update_data = UserCenterUpdate(password=new_password)
-            success, message, updated_user = self.update_user(user_id, update_data)
-
-            if not success:
-                return False, "密码重置失败"
-
-            logger.info(f"用户密码重置成功: {user_id}")
-            return True, "密码重置成功"
-
-        except Exception as e:
-            logger.error(f"重置用户密码失败: {e}")
-            return False, f"密码重置失败: {str(e)}"

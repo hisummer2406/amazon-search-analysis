@@ -54,6 +54,42 @@ async def get_users_list(
         raise HTTPException(status_code=500, detail="获取用户列表失败")
 
 
+@user_router.get("/detail/{user_id}", response_model=Dict[str, Any])
+async def get_user_detail(
+        user_id: int,
+        db: Session = Depends(get_db)
+) -> Dict[str, Any]:
+    """获取用户详情"""
+    try:
+        crud = UserCenterCRUD(db)
+        user = crud.get_user_by_id(user_id)
+
+        if not user:
+            return {
+                "status": 1,
+                "msg": "用户不存在"
+            }
+
+        return {
+            "status": 0,
+            "msg": "获取成功",
+            "data": {
+                "id": user.id,
+                "user_name": user.user_name,
+                "is_active": user.is_active,
+                "is_super": user.is_super,
+                "created_at": user.created_at.isoformat(),
+                "updated_at": user.updated_at.isoformat()
+            }
+        }
+
+    except Exception as e:
+        logger.error(f"获取用户详情失败: {e}")
+        return {
+            "status": 1,
+            "msg": "获取用户详情失败"
+        }
+
 @user_router.post("/login", response_model=UserLoginResponse)
 async def login(
         form_data: OAuth2PasswordRequestForm = Depends(),
@@ -124,7 +160,7 @@ async def register(
                 "msg": "用户名已存在"
             }
 
-        user = crud.create_user(user_data)
+        success, message, user = crud.create_user(user_data)
 
         return {
             "status": 0,
@@ -139,6 +175,43 @@ async def register(
     except Exception as e:
         logger.error(f"创建用户失败: {e}")
         raise HTTPException(status_code=500, detail="创建用户失败")
+
+
+@user_router.put("/update/{user_id}", response_model=Dict[str, Any])
+async def update_user(
+        user_id: int,
+        user_data: UserCenterUpdate,
+        db: Session = Depends(get_db)
+) -> Dict[str, Any]:
+    """更新用户信息"""
+    try:
+        crud = UserCenterCRUD(db)
+        success, message, user = crud.update_user(user_id, user_data)
+
+        if not success:
+            return {
+                "status": 1,
+                "msg": message
+            }
+
+        return {
+            "status": 0,
+            "msg": message,
+            "data": {
+                "id": user.id,
+                "user_name": user.user_name,
+                "is_active": user.is_active,
+                "is_super": user.is_super,
+                "updated_at": user.updated_at.isoformat()
+            }
+        }
+
+    except Exception as e:
+        logger.error(f"更新用户失败: {e}")
+        return {
+            "status": 1,
+            "msg": "更新用户失败"
+        }
 
 
 @user_router.post("/logout")
@@ -178,28 +251,3 @@ async def toggle_user_status(
         logger.error(f"切换用户状态失败: {e}")
         raise HTTPException(status_code=500, detail="状态切换失败")
 
-
-@user_router.post("/reset-password/{user_id}", response_model=Dict[str, Any])
-async def reset_user_password(
-        user_id: int,
-        new_password: str,
-        db: Session = Depends(get_db)
-) -> Dict[str, Any]:
-    """重置用户密码"""
-    try:
-        if len(new_password) < 6:
-            return {
-                "status": 1,
-                "msg": "密码长度至少6位"
-            }
-        crud = UserCenterCRUD(db)
-        success, message = crud.reset_user_password(user_id, new_password)
-
-        return {
-            "status": 0 if success else 1,
-            "msg": message
-        }
-
-    except Exception as e:
-        logger.error(f"重置密码失败: {e}")
-        raise HTTPException(status_code=500, detail="重置密码失败")

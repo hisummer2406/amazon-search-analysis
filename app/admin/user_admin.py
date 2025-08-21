@@ -35,13 +35,13 @@ class UserManagementAdmin(admin.PageAdmin):
                             "type": "select",
                             "name": "is_active",
                             "label": "用户状态:",
-                            "placeholder": "激活",
+                            "placeholder": "可用",
                             "size": "sm",
-                            "value": True,
+                            "value": True,  # 设置默认值为True
                             "className": "min-w-[160px] z-50",
                             "options": [
-                                {"label": "激活", "value": True},
-                                {"label": "禁用", "value": False}
+                                {"label": "可用", "value": True},
+                                {"label": "禁用", "value": False},
                             ],
                         }
                     ]
@@ -65,99 +65,85 @@ class UserManagementAdmin(admin.PageAdmin):
             ]
         }
 
-        # 用户列表表格
+        # 用户列表表格 - 使用更简单的配置
         user_table = {
-            "type": "service",
+            "type": "crud",
             "name": "user_table",
             "api": {
                 "method": "get",
                 "url": "/api/user/list",
                 "data": {
-                    "page": "${page || 1 }",
+                    "page": "${page || 1}",
                     "per_page": "${perPage || 20}",
                     "user_name": "${user_name || ''}",
-                    "is_active": "${is_active}"
+                    "is_active": "${is_active === '' ? '' : (is_active || true)}"
                 }
             },
-            "body": {
-                "type": "table",
-                "source": "${data.items}",
-                "columns": [
-                    {
-                        "name": "id",
-                        "label": "ID",
-                        "width": 60,
-                        "type": "text"
-                    },
-                    {
-                        "name": "user_name",
-                        "label": "用户名",
-                        "type": "text",
-                        "width": 120
-                    },
-                    {
-                        "name": "is_active",
-                        "label": "状态",
-                        "type": "mapping",
-                        "width": 80,
-                        "map": {
-                            "True": {"type": "status", "value": 1, "label": "激活"},
-                            "False": {"type": "status", "value": 0, "label": "禁用"}
-                        }
-                    },
-                    {
-                        "name": "created_at",
-                        "label": "创建时间",
-                        "type": "datetime",
-                        "width": 160,
-                        "format": "YYYY-MM-DD HH:mm:ss"
-                    },
-                    {
-                        "type": "operation",
-                        "label": "操作",
-                        "width": 200,
-                        "buttons": [
-                            {
-                                "type": "button",
-                                "label": "编辑",
-                                "level": "primary",
-                                "size": "xs",
-                                "actionType": "dialog",
-                                "dialog": self._get_edit_user_dialog()
-                            },
-                            {
-                                "type": "button",
-                                "label": "切换状态",
-                                "level": "warning",
-                                "size": "xs",
-                                "actionType": "ajax",
-                                "api": {
-                                    "method": "post",
-                                    "url": "/api/user/toggle-status/${id}"
-                                },
-                                "confirmText": "确认切换用户状态？"
-                            }
-                        ]
-                    }
-                ],
-                # 分页配置
-                "pagination": {
-                    "perPage": 20,
-                    "perPageAvailable": [10, 20, 50, 100],
-                    "showPerPage": True,
-                    "showPageInput": True
+            "defaultParams": {
+                "page": 1,
+                "per_page": 20,
+                "is_active": True  # 设置默认参数
+            },
+            "columns": [
+                {
+                    "name": "id",
+                    "label": "ID",
+                    "width": 60,
+                    "type": "text"
                 },
-                # 表格配置
-                "headerToolbar": [
-                    "pagination",
-                    {
-                        "type": "tpl",
-                        "tpl": "共 ${data.count} 条记录",
-                        "className": "text-muted"
+                {
+                    "name": "user_name",
+                    "label": "用户名",
+                    "type": "text",
+                    "width": 120
+                },
+                {
+                    "name": "is_active",
+                    "label": "状态",
+                    "type": "mapping",
+                    "width": 80,
+                    "map": {
+                        "true": {"type": "status", "value": 1, "label": "可用"},
+                        "false": {"type": "status", "value": 0, "label": "禁用"}
                     }
-                ],
-                "footerToolbar": ["pagination"]
-            }
+                },
+                {
+                    "name": "created_at",
+                    "label": "创建时间",
+                    "type": "datetime",
+                    "width": 160,
+                    "format": "YYYY-MM-DD HH:mm:ss"
+                },
+                {
+                    "type": "operation",
+                    "label": "操作",
+                    "width": 200,
+                    "buttons": [
+                        {
+                            "type": "button",
+                            "label": "编辑",
+                            "level": "primary",
+                            "size": "xs",
+                            "actionType": "dialog",
+                            "dialog": self._get_edit_user_dialog()
+                        },
+                        {
+                            "type": "button",
+                            "label": "切换状态",
+                            "level": "warning",
+                            "size": "xs",
+                            "actionType": "ajax",
+                            "api": {
+                                "method": "post",
+                                "url": "/api/user/toggle-status/${id}"
+                            },
+                            "confirmText": "确认切换用户状态？"
+                        }
+                    ]
+                }
+            ],
+            "perPage": 20,
+            "perPageAvailable": [10, 20, 50, 100]
         }
 
         return Page(
@@ -179,6 +165,9 @@ class UserManagementAdmin(admin.PageAdmin):
                 "api": {
                     "method": "post",
                     "url": "/api/user/create"
+                },
+                "data": {
+                    "is_active": True  # 设置表单默认数据
                 },
                 "body": [
                     {
@@ -230,7 +219,9 @@ class UserManagementAdmin(admin.PageAdmin):
                         "label": "是否激活",
                         "value": True,
                         "trueValue": True,
-                        "falseValue": False
+                        "falseValue": False,
+                        "onText": "可用",
+                        "offText": "禁用"
                     }
                 ]
             },
@@ -255,11 +246,6 @@ class UserManagementAdmin(admin.PageAdmin):
             "size": "md",
             "body": {
                 "type": "form",
-                "api": {
-                    "method": "get",
-                    "url": "/api/user/detail/${id}",
-                    "dataType": "json"
-                },
                 "initApi": {
                     "method": "get",
                     "url": "/api/user/detail/${id}"
