@@ -28,31 +28,10 @@ class AmazonDataQueryAdmin(admin.PageAdmin):
             <style>
                 .font-size-14 { font-size: 14px !important; }
                 .font-size-16 { font-size: 16px !important; }
-                .text-nowrap { 
-                    white-space: nowrap !important; 
-                    overflow: hidden; 
-                    text-overflow: ellipsis; 
-                }
-                .table-responsive .table td { 
-                    vertical-align: middle; 
-                    max-width: 0; /* 配合overflow: hidden使用 */
-                }
+                .text-nowrap { white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; }
+                .table-responsive .table td { vertical-align: middle; }
                 .form-control { font-size: 14px; }
                 .btn { font-size: 14px; }
-                /* 固定宽度列样式 */
-                .fixed-width-col {
-                    max-width: 200px;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    white-space: nowrap;
-                }
-                /* 去除链接下划线 */
-                .text-decoration-none {
-                    text-decoration: none !important;
-                }
-                .text-decoration-none:hover {
-                    text-decoration: underline !important;
-                }
             </style>
             """
         }
@@ -68,14 +47,14 @@ class AmazonDataQueryAdmin(admin.PageAdmin):
         )
 
     def _build_search_form(self) -> dict:
-        """构建搜索表单 - 默认折叠，点击展开"""
+        """构建搜索表单"""
         return {
             "type": "form",
             "target": "data_table",
             "className": "bg-white p-3 mb-3 border rounded",
             "wrapWithPanel": False,
             "body": [
-                # 第一行 - 默认显示
+                # 第一行
                 {
                     "type": "flex",
                     "className": "mb-3",
@@ -89,114 +68,111 @@ class AmazonDataQueryAdmin(admin.PageAdmin):
                             "className": "flex-1 mr-3"
                         },
                         {
-                            "type": "input-range",
-                            "name": "daily_ranking_range",
+                            "type": "select",
+                            "name": "daily_ranking",
                             "label": "日排名",
+                            "placeholder": "全部",
                             "labelWidth": 80,
                             "className": "flex-1 mr-3",
-                            "min": 1,
-                            "max": 500,
-                            "step": 1,
-                            "showInput": True,
                             "clearable": True,
-                            "placeholder": "排名范围"
+                            "options": [
+                                {"label": "1-10", "value": "1-10"},
+                                {"label": "11-20", "value": "11-20"},
+                                {"label": "21-50", "value": "21-50"},
+                                {"label": ">50", "value": ">50"},
+                                {"label": ">100", "value": ">100"}
+                            ]
                         },
                         {
-                            "type": "input-range",
-                            "name": "daily_change_range",
+                            "type": "select",
+                            "name": "daily_change",
                             "label": "日变化",
+                            "placeholder": "全部",
                             "labelWidth": 80,
                             "className": "flex-1 mr-3",
-                            "min": -100,
-                            "max": 100,
-                            "step": 1,
-                            "showInput": True,
                             "clearable": True,
-                            "placeholder": "变化范围"
+                            "options": [
+                                {"label": "上升>10", "value": ">10"},
+                                {"label": "上升1-10", "value": "1-10"},
+                                {"label": "不变", "value": "=0"},
+                                {"label": "下降1-10", "value": "-10-0"},
+                                {"label": "下降>10", "value": "<-10"}
+                            ]
                         },
                         {
-                            "type": "input-text",
+                            "type": "select",
                             "name": "category",
                             "label": "类目",
-                            "placeholder": "请输入类目关键词",
+                            "placeholder": "全部",
                             "labelWidth": 80,
-                            "className": "flex-1 mr-3"
+                            "className": "flex-1",
+                            "clearable": True,
+                            "searchable": True,
+                            "options": []
+                        }
+                    ]
+                },
+                # 第二行
+                {
+                    "type": "flex",
+                    "className": "mb-3",
+                    "items": [
+                        {
+                            "type": "select",
+                            "name": "weekly_ranking",
+                            "label": "周排名",
+                            "placeholder": "全部",
+                            "labelWidth": 80,
+                            "className": "flex-1 mr-3",
+                            "clearable": True,
+                            "options": [
+                                {"label": "1-10", "value": "1-10"},
+                                {"label": "11-20", "value": "11-20"},
+                                {"label": "21-50", "value": "21-50"},
+                                {"label": ">50", "value": ">50"},
+                                {"label": ">100", "value": ">100"}
+                            ]
                         },
                         {
-                            "type": "button",
-                            "label": "更多条件",
-                            "level": "link",
-                            "size": "sm",
-                            "actionType": "target",
-                            "target": "more_conditions",
-                            "className": "flex-none"
-                        }
-                    ]
-                },
-
-                # 更多条件区域 - 默认隐藏
-                {
-                    "type": "container",
-                    "name": "more_conditions",
-                    "visibleOn": "false",  # 默认隐藏
-                    "body": [
-                        {
-                            "type": "flex",
-                            "className": "mb-3",
-                            "items": [
-                                {
-                                    "type": "input-range",
-                                    "name": "weekly_ranking_range",
-                                    "label": "周排名",
-                                    "labelWidth": 80,
-                                    "className": "flex-1 mr-3",
-                                    "min": 1,
-                                    "max": 500,
-                                    "step": 1,
-                                    "showInput": True,
-                                    "clearable": True,
-                                    "placeholder": "排名范围"
-                                },
-                                {
-                                    "type": "input-range",
-                                    "name": "weekly_change_range",
-                                    "label": "周变化",
-                                    "labelWidth": 80,
-                                    "className": "flex-1 mr-3",
-                                    "min": -100,
-                                    "max": 100,
-                                    "step": 1,
-                                    "showInput": True,
-                                    "clearable": True,
-                                    "placeholder": "变化范围"
-                                },
-                                {
-                                    "type": "select",
-                                    "name": "is_new_day",
-                                    "label": "日新品",
-                                    "placeholder": "全部",
-                                    "labelWidth": 80,
-                                    "className": "flex-1 mr-3",
-                                    "clearable": True,
-                                    "options": [
-                                        {"label": "是", "value": True},
-                                        {"label": "否", "value": False}
-                                    ]
-                                },
-                                {
-                                    "type": "input-date",
-                                    "name": "report_date",
-                                    "label": "报告日期",
-                                    "labelWidth": 80,
-                                    "className": "flex-1",
-                                    "format": "YYYY-MM-DD",
-                                    "clearable": True
-                                }
+                            "type": "select",
+                            "name": "weekly_change",
+                            "label": "周变化",
+                            "placeholder": "全部",
+                            "labelWidth": 80,
+                            "className": "flex-1 mr-3",
+                            "clearable": True,
+                            "options": [
+                                {"label": "上升>10", "value": ">10"},
+                                {"label": "上升1-10", "value": "1-10"},
+                                {"label": "不变", "value": "=0"},
+                                {"label": "下降1-10", "value": "-10-0"},
+                                {"label": "下降>10", "value": "<-10"}
                             ]
+                        },
+                        {
+                            "type": "select",
+                            "name": "is_new_day",
+                            "label": "日新品",
+                            "placeholder": "全部",
+                            "labelWidth": 80,
+                            "className": "flex-1 mr-3",
+                            "clearable": True,
+                            "options": [
+                                {"label": "是", "value": True},
+                                {"label": "否", "value": False}
+                            ]
+                        },
+                        {
+                            "type": "input-date",
+                            "name": "report_date",
+                            "label": "报告日期",
+                            "labelWidth": 80,
+                            "className": "flex-1",
+                            "format": "YYYY-MM-DD",
+                            "clearable": True
                         }
                     ]
                 },
-
                 # 操作按钮行
                 {
                     "type": "flex",
@@ -214,15 +190,6 @@ class AmazonDataQueryAdmin(admin.PageAdmin):
                                 {
                                     "type": "reset",
                                     "label": "重置",
-                                    "className": "mr-2"
-                                },
-                                {
-                                    "type": "button",
-                                    "label": "展开/收起",
-                                    "level": "default",
-                                    "size": "sm",
-                                    "actionType": "target",
-                                    "target": "more_conditions",
                                     "className": "mr-2"
                                 }
                             ]
@@ -267,18 +234,19 @@ class AmazonDataQueryAdmin(admin.PageAdmin):
                     "page": "${page || 1}",
                     "perPage": "${perPage || 50}",
 
-                    # 搜索条件参数 - 修改为范围搜索
+                    # 搜索条件参数
                     "keyword": "${keyword || ''}",
-                    "daily_ranking_min": "${daily_ranking_range ? daily_ranking_range.min : ''}",
-                    "daily_ranking_max": "${daily_ranking_range ? daily_ranking_range.max : ''}",
-                    "daily_change_min": "${daily_change_range ? daily_change_range.min : ''}",
-                    "daily_change_max": "${daily_change_range ? daily_change_range.max : ''}",
-                    "weekly_ranking_min": "${weekly_ranking_range ? weekly_ranking_range.min : ''}",
-                    "weekly_ranking_max": "${weekly_ranking_range ? weekly_ranking_range.max : ''}",
-                    "weekly_change_min": "${weekly_change_range ? weekly_change_range.min : ''}",
-                    "weekly_change_max": "${weekly_change_range ? weekly_change_range.max : ''}",
+                    "daily_ranking": "${daily_ranking || ''}",
+                    "daily_change": "${daily_change || ''}",
+                    "weekly_ranking": "${weekly_ranking || ''}",
+                    "weekly_change": "${weekly_change || ''}",
                     "category": "${category || ''}",
+                    "click_share_min": "${click_share_min || ''}",
+                    "click_share_max": "${click_share_max || ''}",
+                    "conversion_share_min": "${conversion_share_min || ''}",
+                    "conversion_share_max": "${conversion_share_max || ''}",
                     "is_new_day": "${is_new_day || ''}",
+                    "is_new_week": "${is_new_week || ''}",
                     "report_date": "${report_date || ''}"
                 }
             },
@@ -346,21 +314,15 @@ class AmazonDataQueryAdmin(admin.PageAdmin):
                 "className": "text-center font-size-16"
             },
 
-            # 关键词列 - 固定宽度，不换行，添加链接
+            # 关键词列 - 不换行
             {
                 "name": "keyword",
                 "label": "关键词",
-                "type": "tpl",
-                "tpl": "<a href='https://www.amazon.com/s?k=${keyword}' target='_blank' class='text-primary text-decoration-none font-weight-bold'>${keyword}</a>",
-                "width": 180,
+                "type": "text",
+                "width": 150,
                 "searchable": True,
                 "sortable": True,
-                "className": "text-nowrap font-size-16",
-                "style": {
-                    "max-width": "180px",
-                    "overflow": "hidden",
-                    "text-overflow": "ellipsis"
-                }
+                "className": "font-weight-bold text-nowrap font-size-16"
             },
 
             # 日排名 - 直接显示数据库字段
@@ -435,31 +397,24 @@ class AmazonDataQueryAdmin(admin.PageAdmin):
                 "className": "text-nowrap font-size-16"
             },
 
-            # ASIN - 显示字段值，点击跳转，不显示为链接样式
+            # ASIN - 显示编码，点击跳转
             {
                 "name": "top_product_asin",
                 "label": "ASIN",
-                "type": "tpl",
-                "tpl": "<a href='https://www.amazon.com/dp/${top_product_asin}' target='_blank' class='text-dark text-decoration-none font-size-16'>${top_product_asin}</a>",
+                "type": "link",
+                "href": "https://www.amazon.com/dp/${top_product_asin}",
+                "target": "_blank",
                 "width": 120,
-                "className": "text-center",
-                "style": {
-                    "max-width": "120px"
-                }
+                "className": "text-primary font-size-16"
             },
 
-            # 商品标题 - 固定宽度，不换行
+            # 商品标题 - 不换行显示
             {
                 "name": "top_product_title",
                 "label": "商品标题",
                 "type": "text",
-                "width": 300,
+                "width": 250,
                 "className": "text-nowrap font-size-16",
-                "style": {
-                    "max-width": "300px",
-                    "overflow": "hidden",
-                    "text-overflow": "ellipsis"
-                },
                 "popOver": {
                     "body": "${top_product_title}",
                     "trigger": "hover"
