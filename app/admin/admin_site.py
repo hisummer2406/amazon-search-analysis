@@ -1,26 +1,47 @@
 # app/admin/admin_site.py
-from fastapi_amis_admin.admin import AdminSite
-from fastapi_amis_admin.admin.site import DocsAdmin, ReDocsAdmin, HomeAdmin, FileAdmin
+from fastapi_amis_admin.amis.components import App, Tpl, Page
+from fastapi_user_auth.admin import AuthAdminSite
 from config import settings
-from fastapi import Request
-from fastapi_amis_admin.amis import App
-from fastapi_amis_admin.admin.settings import Settings
+from fastapi_amis_admin.admin import AdminSite, PageSchemaAdmin, Settings
+from fastapi_amis_admin.amis.constants import SizeEnum
+from fastapi_amis_admin.amis.types import AmisAPI
+from fastapi_amis_admin.utils.translation import i18n as _
+from starlette.requests import Request
+from fastapi_user_auth.auth.schemas import SystemUserEnum
 
+from fastapi_amis_admin.amis.components import (
+    ActionType,
+    App,
+    Dialog,
+    Flex,
+    Service,
+)
 
 class CustomAdminSite(AdminSite):
-    """自定义管理站点，移除默认的系统信息页面并设置侧边栏默认收起"""
 
-    def __init__(self, settings: Settings):
-        super().__init__(settings)
-        # 移除默认注册的管理类
-        self.unregister_admin(HomeAdmin)  # 这是系统信息页面
-        self.unregister_admin(DocsAdmin)  # API文档页面
-        self.unregister_admin(ReDocsAdmin)  # ReDoc文档页面
+    async def _get_page_as_app(self, request: Request) -> App:
+        app = App()
+        app.brandName = self.site.settings.site_title
+        app.logo = self.site.settings.site_icon
+        app.header = Tpl(
+            className="w-full",
+            tpl='''<div class="flex justify-between">
+                        <div class="header-left"></div>
+                        <div class="header-right">
+                            <i class="fa fa-github fa-2x" aria-label="GitHub 仓库"></i>
+                        </div>
+                   </div>''',
+        )
+        app.footer = ('')
+        children = await self.get_page_schema_children(request)
+        app.pages = [{'children': children}] if children else []
+        return app
 
-
+# 正确初始化站点设置
 site = CustomAdminSite(
     settings=Settings(
         site_title=settings.APP_NAME,
+        debug=settings.DEBUG,
         site_icon="/static/amazon_logo.png",
         database_url_async=settings.DATABASE_URL_ASYNC,
         site_url="/",

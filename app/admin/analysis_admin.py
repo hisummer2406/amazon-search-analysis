@@ -6,6 +6,7 @@ from app.admin.admin_site import site
 # 主要数据查询页面
 @site.register_admin
 class AmazonDataQueryAdmin(admin.PageAdmin):
+    """主要数据查询页面"""
     page_schema = PageSchema(
         label="数据查询",
         icon="fa fa-search",
