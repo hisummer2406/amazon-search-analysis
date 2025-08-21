@@ -39,7 +39,7 @@ async def search_data(
 
         # 依赖注入
         db: Session = Depends(get_db),
-        current_user: dict = Depends(get_current_user)
+        # current_user: dict = Depends(get_current_user)
 ) -> Dict[str, Any]:
     """搜索亚马逊数据"""
     try:
