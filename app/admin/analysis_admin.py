@@ -2,13 +2,15 @@ from fastapi_amis_admin.admin import admin
 from fastapi_amis_admin.amis import PageSchema, Page
 from app.admin.admin_site import site
 
-#主要数据查询页面
+
+# 主要数据查询页面
 @site.register_admin
 class AmazonDataQueryAdmin(admin.PageAdmin):
     page_schema = PageSchema(
         label="数据查询",
-        icon="fa fa-search" ,
-        isDefaultPage=True
+        icon="fa fa-search",
+        isDefaultPage=True,
+        sort=1
     )
 
     async def get_page(self, request) -> Page:
