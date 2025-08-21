@@ -1,6 +1,7 @@
 from fastapi_amis_admin.admin import admin
 from fastapi_amis_admin.amis import PageSchema, Page
 from app.admin.admin_site import site
+from fastapi import Request
 
 
 # 主要数据查询页面
@@ -14,7 +15,7 @@ class AmazonDataQueryAdmin(admin.PageAdmin):
         sort=1
     )
 
-    async def get_page(self, request) -> Page:
+    async def get_page(self, request: Request) -> Page:
         # 顶部搜索条件区域
         search_conditions = {
             "type": "form",
@@ -30,7 +31,7 @@ class AmazonDataQueryAdmin(admin.PageAdmin):
                             "type": "input-text",
                             "name": "关键词",
                             "label": "关键词:",
-                            "placeholder": "请输入配",
+                            "placeholder": "请输入关键词",
                             "size": "sm",
                             "className": "w-40"
                         },
@@ -250,7 +251,7 @@ class AmazonDataQueryAdmin(admin.PageAdmin):
         data_table = {
             "type": "service",
             "name": "search_results",
-            "api": "/api/analytics/search",
+            "api": "/api/analysis/search",
             "body": {
                 "type": "table",
                 "source": "${data}",
@@ -272,13 +273,7 @@ class AmazonDataQueryAdmin(admin.PageAdmin):
                     # 数值列组
                     {
                         "name": "current_rangking_day",
-                        "label": "当前日",
-                        "type": "number",
-                        "width": 80
-                    },
-                    {
-                        "name": "previous_rangking_day",
-                        "label": "上期日",
+                        "label": "当前排名",
                         "type": "number",
                         "width": 80
                     },
@@ -290,13 +285,7 @@ class AmazonDataQueryAdmin(admin.PageAdmin):
                     },
                     {
                         "name": "current_rangking_week",
-                        "label": "当前周",
-                        "type": "number",
-                        "width": 80
-                    },
-                    {
-                        "name": "previous_rangking_week",
-                        "label": "上期周",
+                        "label": "当前周排名",
                         "type": "number",
                         "width": 80
                     },
@@ -369,19 +358,6 @@ class AmazonDataQueryAdmin(admin.PageAdmin):
                         "label": "周新品",
                         "type": "switch",
                         "width": 80
-                    },
-                    # 日期列
-                    {
-                        "name": "report_date_day",
-                        "label": "周商品一",
-                        "type": "date",
-                        "width": 100
-                    },
-                    {
-                        "name": "report_date_week",
-                        "label": "日期日期",
-                        "type": "date",
-                        "width": 100
                     },
                     {
                         "name": "created_at",
