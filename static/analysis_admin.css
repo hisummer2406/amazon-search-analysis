@@ -1,0 +1,336 @@
+/* ===== 管理后台公共样式 ===== */
+
+/* === 基础样式 === */
+.font-size-14 {
+    font-size: 14px !important;
+}
+
+.text-center {
+    text-align: center !important;
+}
+
+.vertical-middle {
+    vertical-align: middle !important;
+}
+
+.text-nowrap {
+    white-space: nowrap !important;
+}
+
+/* === 搜索表单样式 === */
+.search-form {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+}
+
+.search-form .cxd-Form-item {
+    margin-bottom: 12px;
+}
+
+.search-form .cxd-Form-label {
+    font-weight: 500;
+    color: #333;
+}
+
+.advanced-search-toggle {
+    color: #007bff;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.advanced-search-toggle:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
+
+.advanced-search-content {
+    background: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 15px;
+    margin-top: 15px;
+    transition: all 0.3s ease;
+}
+
+.label-text {
+    display: inline-block;
+    min-width: 80px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #495057;
+    line-height: 32px;
+}
+
+.range-input-group {
+    align-items: center;
+    gap: 8px;
+}
+
+.range-separator {
+    padding: 0 8px;
+    color: #6c757d;
+    font-weight: bold;
+}
+
+/* === 表格样式 === */
+.analysis-table {
+    background: white;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.analysis-table .cxd-Table-table {
+    font-size: 14px;
+}
+
+.analysis-table .cxd-Table-thead {
+    background: #f8f9fa;
+}
+
+.analysis-table .cxd-Table-thead th {
+    font-size: 14px !important;
+    font-weight: 600;
+    color: #495057;
+    text-align: center !important;
+    vertical-align: middle !important;
+    border-bottom: 2px solid #dee2e6;
+    padding: 12px 8px;
+}
+
+.analysis-table .cxd-Table-tbody td {
+    font-size: 14px !important;
+    padding: 10px 8px;
+    vertical-align: middle !important;
+    border-bottom: 1px solid #eee;
+}
+
+.analysis-table .cxd-Table-tbody tr:hover {
+    background-color: #f5f5f5;
+}
+
+/* 单元格样式 */
+.cell-narrow {
+    width: 80px;
+    text-align: center;
+}
+
+.cell-fixed-width {
+    width: 120px;
+    text-align: center;
+}
+
+.cell-wide {
+    width: 200px;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 链接样式 */
+.keyword-link {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.keyword-link:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
+
+.asin-link {
+    color: #28a745;
+    text-decoration: none;
+    font-weight: 500;
+    font-family: monospace;
+    transition: all 0.2s ease;
+}
+
+.asin-link:hover {
+    color: #1e7e34;
+    text-decoration: underline;
+}
+
+/* 变化指示器样式 */
+.change-positive {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.change-negative {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.change-neutral {
+    color: #6c757d;
+}
+
+/* 转化率样式 */
+.conversion-high {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.conversion-medium {
+    color: #ffc107;
+    font-weight: bold;
+}
+
+.conversion-low {
+    color: #dc3545;
+}
+
+/* 状态标签样式 */
+.status-new-day {
+    color: #007bff;
+    font-weight: bold;
+    background: #e3f2fd;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+}
+
+.status-new-week {
+    color: #28a745;
+    font-weight: bold;
+    background: #e8f5e8;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+}
+
+.status-normal {
+    color: #6c757d;
+    font-size: 12px;
+}
+
+/* 趋势图样式 */
+.trend-chart {
+    height: 30px;
+    background: linear-gradient(45deg, #e3f2fd 25%, transparent 25%),
+                linear-gradient(-45deg, #e3f2fd 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #e3f2fd 75%),
+                linear-gradient(-45deg, transparent 75%, #e3f2fd 75%);
+    background-size: 4px 4px;
+    background-position: 0 0, 0 2px, 2px -2px, -2px 0px;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: #007bff;
+}
+
+/* 悬浮提示样式 */
+.popover-content {
+    max-width: 300px;
+    word-wrap: break-word;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+/* 工具栏样式 */
+.analysis-toolbar {
+    font-size: 14px;
+    color: #495057;
+    font-weight: 500;
+}
+
+/* === 上传按钮样式 === */
+.upload-submit-btn {
+    min-width: 120px;
+}
+
+.upload-requirements {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 4px;
+    border-left: 3px solid #007bff;
+}
+
+.upload-requirements h5 {
+    color: #495057;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.upload-requirements ul {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.upload-requirements li {
+    margin-bottom: 5px;
+    color: #6c757d;
+    font-size: 13px;
+}
+
+/* === 响应式设计 === */
+@media (max-width: 768px) {
+    .search-form .cxd-Form-item {
+        margin-bottom: 15px;
+    }
+
+    .cell-wide {
+        width: 150px;
+        max-width: 150px;
+    }
+
+    .analysis-table .cxd-Table-thead th,
+    .analysis-table .cxd-Table-tbody td {
+        font-size: 12px !important;
+        padding: 8px 4px;
+    }
+}
+
+@media (max-width: 576px) {
+    .search-form {
+        padding: 15px;
+    }
+
+    .cell-wide {
+        width: 120px;
+        max-width: 120px;
+    }
+
+    .analysis-table .cxd-Table-thead th,
+    .analysis-table .cxd-Table-tbody td {
+        font-size: 11px !important;
+        padding: 6px 3px;
+    }
+}
+
+/* === 动画效果 === */
+.advanced-search-content {
+    transition: all 0.3s ease;
+}
+
+.keyword-link,
+.asin-link {
+    transition: all 0.2s ease;
+}
+
+/* === 打印样式 === */
+@media print {
+    .search-form,
+    .analysis-toolbar {
+        display: none !important;
+    }
+
+    .analysis-table {
+        box-shadow: none;
+        border: 1px solid #000;
+    }
+
+    .analysis-table .cxd-Table-thead th,
+    .analysis-table .cxd-Table-tbody td {
+        font-size: 10px !important;
+        padding: 4px;
+        border: 1px solid #000;
+    }
+}
