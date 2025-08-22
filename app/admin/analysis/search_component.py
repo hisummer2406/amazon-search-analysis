@@ -1,5 +1,5 @@
 """
-搜索组件 - 最直接的修复方法
+搜索组件 - 优化第一行布局，标签和输入框在同一行
 """
 
 
@@ -8,50 +8,86 @@ class SearchComponent:
 
     @staticmethod
     def build_search_form() -> dict:
-        """构建搜索表单 - 使用 collapse 组件实现高级搜索"""
+        """构建搜索表单 - 优化第一行布局"""
         return {
             "type": "form",
             "target": "data_table",
             "className": "search-form",
             "wrapWithPanel": False,
             "body": [
-                # 第一行：基础搜索条件
+                # 第一行：基础搜索条件 - 使用flex布局，标签和输入框左右排列
                 {
                     "type": "flex",
                     "className": "mb-3",
                     "items": [
                         {
-                            "type": "input-text",
-                            "name": "keyword",
-                            "label": "关键词",
-                            "placeholder": "请输入关键词",
-                            "labelWidth": 80,
-                            "className": "flex-1 mr-3"
-                        },
-                        {
-                            "type": "input-text",
-                            "name": "brand",
-                            "label": "品牌",
-                            "placeholder": "请输入品牌",
-                            "labelWidth": 80,
-                            "className": "flex-1 mr-3"
-                        },
-                        {
-                            "type": "input-text",
-                            "name": "category",
-                            "label": "类目",
-                            "placeholder": "请输入类目",
-                            "labelWidth": 80,
-                            "className": "flex-1 mr-3"
-                        },
-                        {
-                            "type": "input-date",
-                            "name": "report_date",
-                            "label": "报告日期",
-                            "labelWidth": 80,
+                            "type": "flex",
                             "className": "flex-1 mr-3",
-                            "format": "YYYY-MM-DD",
-                            "clearable": True
+                            "items": [
+                                {
+                                    "type": "tpl",
+                                    "tpl": "关键词：",
+                                    "className": "label-text mr-1"
+                                },
+                                {
+                                    "type": "input-text",
+                                    "name": "keyword",
+                                    "placeholder": "请输入关键词",
+                                    "className": "flex-1"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "flex",
+                            "className": "flex-1 mr-3",
+                            "items": [
+                                {
+                                    "type": "tpl",
+                                    "tpl": "品牌：",
+                                    "className": "label-text mr-1"
+                                },
+                                {
+                                    "type": "input-text",
+                                    "name": "brand",
+                                    "placeholder": "请输入品牌",
+                                    "className": "flex-1"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "flex",
+                            "className": "flex-1 mr-3",
+                            "items": [
+                                {
+                                    "type": "tpl",
+                                    "tpl": "类目：",
+                                    "className": "label-text mr-1"
+                                },
+                                {
+                                    "type": "input-text",
+                                    "name": "category",
+                                    "placeholder": "请输入类目",
+                                    "className": "flex-1"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "flex",
+                            "className": "flex-1 mr-3",
+                            "items": [
+                                {
+                                    "type": "tpl",
+                                    "tpl": "报告日期：",
+                                    "className": "label-text mr-1"
+                                },
+                                {
+                                    "type": "input-date",
+                                    "name": "report_date",
+                                    "format": "YYYY-MM-DD",
+                                    "clearable": True,
+                                    "className": "flex-1"
+                                }
+                            ]
                         },
                         # 基础操作按钮
                         {
@@ -413,6 +449,3 @@ class SearchComponent:
                 }
             ]
         }
-
-    def _get_advanced_search_form(self) -> dict:
-        """获取高级搜索表单"""

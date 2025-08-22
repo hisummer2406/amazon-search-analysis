@@ -31,49 +31,26 @@ class AmazonDataQueryAdmin(admin.PageAdmin):
         upload_buttons = UploadComponent.build_upload_buttons()
         data_table = TableComponent.build_data_table()
 
-        # 组合搜索表单和上传按钮
-        combined_search_form = self._combine_search_and_upload(search_form, upload_buttons)
+        # 简化布局：直接修改第一行按钮组
+        self._add_upload_to_first_row(search_form, upload_buttons)
 
         return Page(
             title="数据查询",
             className="analysis-admin",
             body=[
                 css_link,
-                combined_search_form,
+                search_form,
                 {"type": "divider"},
                 data_table
             ]
         )
 
-    def _combine_search_and_upload(self, search_form: dict, upload_buttons: dict) -> dict:
-        """将搜索表单和上传按钮组合到一起 - 适配collapse组件"""
-        search_body = search_form.get("body", [])
+    def _add_upload_to_first_row(self, search_form: dict, upload_buttons: dict) -> None:
+        """将上传按钮添加到第一行"""
+        # 获取上传按钮
+        upload_items = upload_buttons["items"][1]["items"]
 
-        # 在collapse组件后添加上传按钮行
-        # 找到collapse组件的位置
-        collapse_index = -1
-        for i, item in enumerate(search_body):
-            if item.get("type") == "collapse":
-                collapse_index = i
-                break
-
-        if collapse_index >= 0:
-            # 在collapse组件后插入上传按钮
-            upload_row = {
-                "type": "flex",
-                "justify": "flex-end",  # 右对齐
-                "className": "mt-3 mb-3",
-                "items": upload_buttons.get("items", [{}])[1].get("items", [])  # 获取上传按钮组
-            }
-            search_body.insert(collapse_index + 1, upload_row)
-        else:
-            # 如果没找到collapse组件，就添加到最后
-            upload_row = {
-                "type": "flex",
-                "justify": "flex-end",
-                "className": "mt-3 mb-3",
-                "items": upload_buttons.get("items", [{}])[1].get("items", [])
-            }
-            search_body.append(upload_row)
-
-        return search_form
+        # 找到第一行的按钮组并添加上传按钮
+        first_row = search_form["body"][0]["items"]
+        button_group = first_row[-1]["items"]
+        button_group.extend(upload_items)
