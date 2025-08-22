@@ -115,23 +115,19 @@ class TableComponent:
                 "name": "keyword",
                 "label": "关键词",
                 "type": "tpl",
-                "width": 120,
+                "width": 140,
                 "searchable": True,
-                "sortable": True,
-                "className": "cell-fixed-width text-nowrap",
+                "className": "text-nowrap cell-wide",
                 "style": {
                     "fontSize": "14px",
                     "whiteSpace": "nowrap",
+                    "overflow": "hidden",
+                    "textOverflow": "ellipsis",
                     "textAlign": "left",
                     "verticalAlign": "middle"
                 },
                 "labelClassName": "text-center vertical-middle font-size-14",
                 "tpl": "<a href='https://www.amazon.com/s?k=${keyword | url_encode}' target='_blank' class='keyword-link text-nowrap' title='${keyword}'>${keyword}</a>",
-                "popOver": {
-                    "body": "<div class='popover-content'>${keyword}</div>",
-                    "trigger": "hover",
-                    "placement": "top"
-                }
             },
 
             # 日排名
@@ -139,7 +135,7 @@ class TableComponent:
                 "name": "current_rangking_day",
                 "label": "日排名",
                 "type": "text",
-                "width": 80,
+                "width": 50,
                 "sortable": True,
                 "className": "text-center cell-narrow",
                 "style": {
@@ -156,7 +152,7 @@ class TableComponent:
                 "label": "日变化",
                 "type": "tpl",
                 "tpl": "<span class='${ranking_change_day > 0 ? \"change-positive\" : ranking_change_day < 0 ? \"change-negative\" : \"change-neutral\"}'>${ranking_change_day > 0 ? \"+\" + ranking_change_day : ranking_change_day}</span>",
-                "width": 80,
+                "width": 50,
                 "sortable": True,
                 "className": "text-center cell-narrow",
                 "style": {
@@ -172,7 +168,7 @@ class TableComponent:
                 "name": "current_rangking_week",
                 "label": "周排名",
                 "type": "text",
-                "width": 80,
+                "width": 50,
                 "sortable": True,
                 "className": "text-center cell-narrow",
                 "style": {
@@ -189,7 +185,7 @@ class TableComponent:
                 "label": "周变化",
                 "type": "tpl",
                 "tpl": "<span class='${ranking_change_week > 0 ? \"change-positive\" : ranking_change_week < 0 ? \"change-negative\" : \"change-neutral\"}'>${ranking_change_week > 0 ? \"+\" + ranking_change_week : ranking_change_week}</span>",
-                "width": 80,
+                "width": 50,
                 "sortable": True,
                 "className": "text-center cell-narrow",
                 "style": {
@@ -231,12 +227,7 @@ class TableComponent:
                     "textAlign": "left",
                     "verticalAlign": "middle"
                 },
-                "labelClassName": "text-center vertical-middle font-size-14",
-                "popOver": {
-                    "body": "<div class='popover-content'>${top_brand}</div>",
-                    "trigger": "hover",
-                    "placement": "top"
-                }
+                "labelClassName": "text-center vertical-middle font-size-14"
             },
 
             # 类目
@@ -244,21 +235,18 @@ class TableComponent:
                 "name": "top_category",
                 "label": "类目",
                 "type": "text",
-                "width": 120,
+                "width": 140,
                 "searchable": True,
-                "className": "text-nowrap cell-fixed-width",
+                "className": "text-nowrap cell-wide",
                 "style": {
                     "fontSize": "14px",
                     "whiteSpace": "nowrap",
+                    "overflow": "hidden",
+                    "textOverflow": "ellipsis",
                     "textAlign": "left",
                     "verticalAlign": "middle"
                 },
                 "labelClassName": "text-center vertical-middle font-size-14",
-                "popOver": {
-                    "body": "<div class='popover-content'>${top_category}</div>",
-                    "trigger": "hover",
-                    "placement": "top"
-                }
             },
 
             # ASIN - 显示编码，点击跳转，增加表头搜索
@@ -295,11 +283,6 @@ class TableComponent:
                     "verticalAlign": "middle"
                 },
                 "labelClassName": "text-center vertical-middle font-size-14",
-                "popOver": {
-                    "body": "<div class='popover-content'>${top_product_title}</div>",
-                    "trigger": "hover",
-                    "placement": "top"
-                }
             },
 
             # 点击份额
@@ -358,7 +341,7 @@ class TableComponent:
                 "name": "is_new_day",
                 "label": "日新品",
                 "type": "tpl",
-                "width": 70,
+                "width": 50,
                 "className": "text-center cell-narrow",
                 "style": {
                     "fontSize": "14px",
@@ -374,7 +357,7 @@ class TableComponent:
                 "name": "is_new_week",
                 "label": "周新品",
                 "type": "tpl",
-                "width": 70,
+                "width": 50,
                 "className": "text-center cell-narrow",
                 "style": {
                     "fontSize": "14px",

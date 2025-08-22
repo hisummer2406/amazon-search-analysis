@@ -1,13 +1,14 @@
 """
-搜索组件 - 负责搜索表单的构建和配置
+搜索组件 - 最直接的修复方法
 """
+
 
 class SearchComponent:
     """搜索功能组件"""
 
     @staticmethod
     def build_search_form() -> dict:
-        """构建搜索表单 - 基础搜索在第一行，高级搜索默认折叠"""
+        """构建搜索表单 - 使用 collapse 组件实现高级搜索"""
         return {
             "type": "form",
             "target": "data_table",
@@ -73,59 +74,12 @@ class SearchComponent:
                     ]
                 },
 
-                # 高级搜索展开按钮
+                # 高级搜索 - 使用 collapse 组件
                 {
-                    "type": "flex",
-                    "justify": "flex-start",
-                    "items": [
-                        {
-                            "type": "button",
-                            "name": "advanced_toggle_btn",
-                            "label": "高级搜索",
-                            "icon": "fa fa-angle-down",
-                            "level": "link",
-                            "className": "advanced-search-toggle",
-                            "onEvent": {
-                                "click": {
-                                    "actions": [
-                                        {
-                                            "actionType": "custom",
-                                            "script": """
-                                                const content = event.context.getComponentByName('advanced_search_content');
-                                                const button = event.context.getComponentByName('advanced_toggle_btn');
-
-                                                if (content && button) {
-                                                    const isVisible = content.props.visible;
-
-                                                    if (isVisible) {
-                                                        content.setVisible(false);
-                                                        button.updateData({
-                                                            icon: 'fa fa-angle-down',
-                                                            label: '高级搜索'
-                                                        });
-                                                    } else {
-                                                        content.setVisible(true);
-                                                        button.updateData({
-                                                            icon: 'fa fa-angle-up',
-                                                            label: '收起搜索'
-                                                        });
-                                                    }
-                                                }
-                                            """
-                                        }
-                                    ]
-                                }
-                            }
-                        }
-                    ]
-                },
-
-                # 高级搜索内容区域 - 默认隐藏
-                {
-                    "type": "container",
-                    "name": "advanced_search_content",
-                    "className": "advanced-search-content",
-                    "visible": False,
+                    "type": "collapse",
+                    "header": "高级搜索",
+                    "collapsed": True,
+                    "className": "mb-3",
                     "body": [
                         # 新品筛选行
                         {
