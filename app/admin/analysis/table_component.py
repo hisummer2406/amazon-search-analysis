@@ -1,15 +1,14 @@
-
 class TableComponent:
     """表格功能组件"""
 
     @staticmethod
     def build_data_table() -> dict:
-        """构建数据表格 - 统一表头字体大小"""
+        """构建数据表格 - 修复API参数传递"""
         return {
             "type": "crud",
             "name": "data_table",
             "className": "analysis-table m-2",
-            # API配置 - 支持所有查询参数
+            # API配置 - 修复参数传递
             "api": {
                 "method": "get",
                 "url": "/api/analysis/search",
@@ -18,29 +17,37 @@ class TableComponent:
                     "page": "${page || 1}",
                     "perPage": "${perPage || 50}",
 
-                    # 搜索条件参数
-                    "keyword": "${keyword || ''}",
-                    "brand": "${brand || ''}",
-                    "category": "${category || ''}",
-                    "asin": "${asin || ''}",
-                    "product_title": "${product_title || ''}",
-                    "daily_ranking_min": "${daily_ranking_min || ''}",
-                    "daily_ranking_max": "${daily_ranking_max || ''}",
-                    "daily_change_min": "${daily_change_min || ''}",
-                    "daily_change_max": "${daily_change_max || ''}",
-                    "weekly_ranking_min": "${weekly_ranking_min || ''}",
-                    "weekly_ranking_max": "${weekly_ranking_max || ''}",
-                    "weekly_change_min": "${weekly_change_min || ''}",
-                    "weekly_change_max": "${weekly_change_max || ''}",
-                    "click_share_min": "${click_share_min || ''}",
-                    "click_share_max": "${click_share_max || ''}",
-                    "conversion_share_min": "${conversion_share_min || ''}",
-                    "conversion_share_max": "${conversion_share_max || ''}",
-                    "conversion_rate_min": "${conversion_rate_min || ''}",
-                    "conversion_rate_max": "${conversion_rate_max || ''}",
-                    "is_new_day": "${is_new_day || ''}",
-                    "is_new_week": "${is_new_week || ''}",
-                    "report_date": "${report_date || ''}"
+                    # 基础搜索条件参数
+                    "keyword": "${keyword}",
+                    "brand": "${brand}",
+                    "category": "${category}",
+                    "asin": "${asin}",
+                    "product_title": "${product_title}",
+                    "report_date": "${report_date}",
+
+                    # 高级搜索 - 排名范围参数
+                    "daily_ranking_min": "${daily_ranking_min}",
+                    "daily_ranking_max": "${daily_ranking_max}",
+                    "weekly_ranking_min": "${weekly_ranking_min}",
+                    "weekly_ranking_max": "${weekly_ranking_max}",
+
+                    # 高级搜索 - 变化范围参数
+                    "daily_change_min": "${daily_change_min}",
+                    "daily_change_max": "${daily_change_max}",
+                    "weekly_change_min": "${weekly_change_min}",
+                    "weekly_change_max": "${weekly_change_max}",
+
+                    # 高级搜索 - 份额和转化率范围参数
+                    "click_share_min": "${click_share_min}",
+                    "click_share_max": "${click_share_max}",
+                    "conversion_share_min": "${conversion_share_min}",
+                    "conversion_share_max": "${conversion_share_max}",
+                    "conversion_rate_min": "${conversion_rate_min}",
+                    "conversion_rate_max": "${conversion_rate_max}",
+
+                    # 高级搜索 - 布尔值参数
+                    "is_new_day": "${is_new_day}",
+                    "is_new_week": "${is_new_week}"
                 }
             },
 

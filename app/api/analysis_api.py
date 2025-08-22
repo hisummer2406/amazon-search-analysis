@@ -14,28 +14,74 @@ logger = logging.getLogger(__name__)
 analysis_router = APIRouter()
 
 
+def _parse_optional_int(value: str) -> Optional[int]:
+    """解析可选整数参数，处理空字符串"""
+    if not value or value.strip() == "":
+        return None
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return None
+
+
+def _parse_optional_float(value: str) -> Optional[float]:
+    """解析可选浮点数参数，处理空字符串"""
+    if not value or value.strip() == "":
+        return None
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return None
+
+
+def _parse_optional_bool(value: str) -> Optional[bool]:
+    """解析可选布尔值参数，处理空字符串"""
+    if not value or value.strip() == "":
+        return None
+    if value.lower() in ["true", "1", "yes", "是"]:
+        return True
+    elif value.lower() in ["false", "0", "no", "否"]:
+        return False
+    return None
+
+
 @analysis_router.get("/search")
 async def search_data(
         # 分页参数
         page: int = Query(1, ge=1, description="页码"),
         perPage: int = Query(50, ge=1, le=200, description="每页数量"),
 
-        # 搜索条件参数
+        # 基础搜索条件参数 - 使用字符串类型避免类型转换错误
         keyword: Optional[str] = Query(None, description="关键词搜索"),
-        daily_ranking: Optional[str] = Query(None, description="日排名筛选"),
-        daily_change: Optional[str] = Query(None, description="日变化筛选"),
-        weekly_ranking: Optional[str] = Query(None, description="周排名筛选"),
-        weekly_change: Optional[str] = Query(None, description="周变化筛选"),
-        category: Optional[str] = Query(None, description="类目筛选"),
-        weekly_weekly_change: Optional[str] = Query("ALL", description="周周变化筛选"),
-        total_change: Optional[str] = Query(None, description="总变化筛选"),
-        click_share: Optional[str] = Query(None, description="点击份额筛选"),
-        conversion_share: Optional[str] = Query(None, description="转化份额筛选"),
-        conversion_rate: Optional[str] = Query(None, description="转化率筛选"),
-        is_new_day: Optional[str] = Query(None, description="是否日期新筛选"),
-        is_new_week: Optional[str] = Query(None, description="是否周新数筛选"),
-        has_weekly_daily: Optional[str] = Query(None, description="是否周有日一筛选"),
-        report_date: Optional[str] = Query(None, description="日期筛选"),
+        brand: Optional[str] = Query(None, description="品牌搜索"),
+        category: Optional[str] = Query(None, description="类目搜索"),
+        asin: Optional[str] = Query(None, description="ASIN搜索"),
+        product_title: Optional[str] = Query(None, description="商品标题搜索"),
+        report_date: Optional[str] = Query(None, description="报告日期筛选"),
+
+        # 高级搜索 - 排名范围参数（使用字符串避免转换错误）
+        daily_ranking_min: Optional[str] = Query(None, description="日排名最小值"),
+        daily_ranking_max: Optional[str] = Query(None, description="日排名最大值"),
+        weekly_ranking_min: Optional[str] = Query(None, description="周排名最小值"),
+        weekly_ranking_max: Optional[str] = Query(None, description="周排名最大值"),
+
+        # 高级搜索 - 变化范围参数（使用字符串避免转换错误）
+        daily_change_min: Optional[str] = Query(None, description="日变化最小值"),
+        daily_change_max: Optional[str] = Query(None, description="日变化最大值"),
+        weekly_change_min: Optional[str] = Query(None, description="周变化最小值"),
+        weekly_change_max: Optional[str] = Query(None, description="周变化最大值"),
+
+        # 高级搜索 - 份额和转化率范围参数（使用字符串避免转换错误）
+        click_share_min: Optional[str] = Query(None, description="点击份额最小值"),
+        click_share_max: Optional[str] = Query(None, description="点击份额最大值"),
+        conversion_share_min: Optional[str] = Query(None, description="转化份额最小值"),
+        conversion_share_max: Optional[str] = Query(None, description="转化份额最大值"),
+        conversion_rate_min: Optional[str] = Query(None, description="转化率最小值"),
+        conversion_rate_max: Optional[str] = Query(None, description="转化率最大值"),
+
+        # 高级搜索 - 布尔值参数（使用字符串避免转换错误）
+        is_new_day: Optional[str] = Query(None, description="是否日新品"),
+        is_new_week: Optional[str] = Query(None, description="是否周新品"),
 
         # 依赖注入
         db: Session = Depends(get_db),
@@ -49,24 +95,31 @@ async def search_data(
         # 构建查询
         query = db.query(AmazonOriginSearchData)
 
-        # 应用筛选条件
+        # 解析参数并应用筛选条件
         query = _apply_search_filters(
             query=query,
             keyword=keyword,
-            daily_ranking=daily_ranking,
-            daily_change=daily_change,
-            weekly_ranking=weekly_ranking,
-            weekly_change=weekly_change,
+            brand=brand,
             category=category,
-            weekly_weekly_change=weekly_weekly_change,
-            total_change=total_change,
-            click_share=click_share,
-            conversion_share=conversion_share,
-            conversion_rate=conversion_rate,
-            is_new_day=is_new_day,
-            is_new_week=is_new_week,
-            has_weekly_daily=has_weekly_daily,
-            report_date=report_date
+            asin=asin,
+            product_title=product_title,
+            report_date=report_date,
+            daily_ranking_min=_parse_optional_int(daily_ranking_min),
+            daily_ranking_max=_parse_optional_int(daily_ranking_max),
+            weekly_ranking_min=_parse_optional_int(weekly_ranking_min),
+            weekly_ranking_max=_parse_optional_int(weekly_ranking_max),
+            daily_change_min=_parse_optional_int(daily_change_min),
+            daily_change_max=_parse_optional_int(daily_change_max),
+            weekly_change_min=_parse_optional_int(weekly_change_min),
+            weekly_change_max=_parse_optional_int(weekly_change_max),
+            click_share_min=_parse_optional_float(click_share_min),
+            click_share_max=_parse_optional_float(click_share_max),
+            conversion_share_min=_parse_optional_float(conversion_share_min),
+            conversion_share_max=_parse_optional_float(conversion_share_max),
+            conversion_rate_min=_parse_optional_float(conversion_rate_min),
+            conversion_rate_max=_parse_optional_float(conversion_rate_max),
+            is_new_day=_parse_optional_bool(is_new_day),
+            is_new_week=_parse_optional_bool(is_new_week)
         )
 
         # 获取总数（应用筛选条件后）
@@ -107,154 +160,50 @@ async def search_data(
 def _apply_search_filters(
         query,
         keyword: Optional[str] = None,
-        daily_ranking: Optional[str] = None,
-        daily_change: Optional[str] = None,
-        weekly_ranking: Optional[str] = None,
-        weekly_change: Optional[str] = None,
+        brand: Optional[str] = None,
         category: Optional[str] = None,
-        weekly_weekly_change: Optional[str] = None,
-        total_change: Optional[str] = None,
-        click_share: Optional[str] = None,
-        conversion_share: Optional[str] = None,
-        conversion_rate: Optional[str] = None,
-        is_new_day: Optional[str] = None,
-        is_new_week: Optional[str] = None,
-        has_weekly_daily: Optional[str] = None,
-        report_date: Optional[str] = None
+        asin: Optional[str] = None,
+        product_title: Optional[str] = None,
+        report_date: Optional[str] = None,
+        daily_ranking_min: Optional[int] = None,
+        daily_ranking_max: Optional[int] = None,
+        weekly_ranking_min: Optional[int] = None,
+        weekly_ranking_max: Optional[int] = None,
+        daily_change_min: Optional[int] = None,
+        daily_change_max: Optional[int] = None,
+        weekly_change_min: Optional[int] = None,
+        weekly_change_max: Optional[int] = None,
+        click_share_min: Optional[float] = None,
+        click_share_max: Optional[float] = None,
+        conversion_share_min: Optional[float] = None,
+        conversion_share_max: Optional[float] = None,
+        conversion_rate_min: Optional[float] = None,
+        conversion_rate_max: Optional[float] = None,
+        is_new_day: Optional[bool] = None,
+        is_new_week: Optional[bool] = None
 ):
     """应用搜索筛选条件"""
 
-    # 关键词搜索
-    if keyword:
-        query = query.filter(AmazonOriginSearchData.keyword.ilike(f"%{keyword}%"))
+    # 基础搜索条件 - 过滤空字符串
+    if keyword and keyword.strip():
+        query = query.filter(AmazonOriginSearchData.keyword.ilike(f"%{keyword.strip()}%"))
 
-    # 日排名筛选
-    if daily_ranking and daily_ranking != "-":
+    if brand and brand.strip():
+        query = query.filter(AmazonOriginSearchData.top_brand.ilike(f"%{brand.strip()}%"))
+
+    if category and category.strip():
+        query = query.filter(AmazonOriginSearchData.top_category.ilike(f"%{category.strip()}%"))
+
+    if asin and asin.strip():
+        query = query.filter(AmazonOriginSearchData.top_product_asin.ilike(f"%{asin.strip()}%"))
+
+    if product_title and product_title.strip():
+        query = query.filter(AmazonOriginSearchData.top_product_title.ilike(f"%{product_title.strip()}%"))
+
+    # 报告日期筛选
+    if report_date and report_date.strip():
         try:
-            ranking_range = _parse_ranking_filter(daily_ranking)
-            if ranking_range:
-                min_val, max_val = ranking_range
-                query = query.filter(
-                    and_(
-                        AmazonOriginSearchData.current_rangking_day >= min_val,
-                        AmazonOriginSearchData.current_rangking_day <= max_val
-                    )
-                )
-        except ValueError:
-            pass
-
-    # 日变化筛选
-    if daily_change and daily_change != "-":
-        try:
-            change_range = _parse_change_filter(daily_change)
-            if change_range:
-                min_val, max_val = change_range
-                query = query.filter(
-                    and_(
-                        AmazonOriginSearchData.ranking_change_day >= min_val,
-                        AmazonOriginSearchData.ranking_change_day <= max_val
-                    )
-                )
-        except ValueError:
-            pass
-
-    # 周排名筛选
-    if weekly_ranking and weekly_ranking != "-":
-        try:
-            ranking_range = _parse_ranking_filter(weekly_ranking)
-            if ranking_range:
-                min_val, max_val = ranking_range
-                query = query.filter(
-                    and_(
-                        AmazonOriginSearchData.current_rangking_week >= min_val,
-                        AmazonOriginSearchData.current_rangking_week <= max_val
-                    )
-                )
-        except ValueError:
-            pass
-
-    # 周变化筛选
-    if weekly_change and weekly_change != "-":
-        try:
-            change_range = _parse_change_filter(weekly_change)
-            if change_range:
-                min_val, max_val = change_range
-                query = query.filter(
-                    and_(
-                        AmazonOriginSearchData.ranking_change_week >= min_val,
-                        AmazonOriginSearchData.ranking_change_week <= max_val
-                    )
-                )
-        except ValueError:
-            pass
-
-    # 类目筛选
-    if category and category != "全部":
-        query = query.filter(AmazonOriginSearchData.top_category.ilike(f"%{category}%"))
-
-    # 点击份额筛选
-    if click_share and click_share != "-":
-        try:
-            share_range = _parse_numeric_filter(click_share)
-            if share_range:
-                min_val, max_val = share_range
-                query = query.filter(
-                    and_(
-                        AmazonOriginSearchData.top_product_click_share >= min_val,
-                        AmazonOriginSearchData.top_product_click_share <= max_val
-                    )
-                )
-        except ValueError:
-            pass
-
-    # 转化份额筛选
-    if conversion_share and conversion_share != "-":
-        try:
-            share_range = _parse_numeric_filter(conversion_share)
-            if share_range:
-                min_val, max_val = share_range
-                query = query.filter(
-                    and_(
-                        AmazonOriginSearchData.top_product_conversion_share >= min_val,
-                        AmazonOriginSearchData.top_product_conversion_share <= max_val
-                    )
-                )
-        except ValueError:
-            pass
-
-    # 转化率筛选 (计算字段: 转化份额/点击份额)
-    if conversion_rate and conversion_rate != "-":
-        try:
-            rate_range = _parse_numeric_filter(conversion_rate)
-            if rate_range:
-                min_val, max_val = rate_range
-                # 避免除零错误
-                query = query.filter(
-                    and_(
-                        AmazonOriginSearchData.top_product_click_share > 0,
-                        (AmazonOriginSearchData.top_product_conversion_share /
-                         AmazonOriginSearchData.top_product_click_share) >= min_val,
-                        (AmazonOriginSearchData.top_product_conversion_share /
-                         AmazonOriginSearchData.top_product_click_share) <= max_val
-                    )
-                )
-        except ValueError:
-            pass
-
-    # 是否日新品筛选
-    if is_new_day and is_new_day != "-":
-        is_new = is_new_day.lower() in ["true", "是", "1", "yes"]
-        query = query.filter(AmazonOriginSearchData.is_new_day == is_new)
-
-    # 是否周新品筛选
-    if is_new_week and is_new_week != "-":
-        is_new = is_new_week.lower() in ["true", "是", "1", "yes"]
-        query = query.filter(AmazonOriginSearchData.is_new_week == is_new)
-
-    # 日期筛选
-    if report_date:
-        try:
-            target_date = datetime.strptime(report_date, "%Y-%m-%d").date()
+            target_date = datetime.strptime(report_date.strip(), "%Y-%m-%d").date()
             query = query.filter(
                 or_(
                     AmazonOriginSearchData.report_date_day == target_date,
@@ -262,120 +211,65 @@ def _apply_search_filters(
                 )
             )
         except ValueError:
-            pass
+            logger.warning(f"无效的日期格式: {report_date}")
+
+    # 排名范围筛选
+    if daily_ranking_min is not None:
+        query = query.filter(AmazonOriginSearchData.current_rangking_day >= daily_ranking_min)
+    if daily_ranking_max is not None:
+        query = query.filter(AmazonOriginSearchData.current_rangking_day <= daily_ranking_max)
+
+    if weekly_ranking_min is not None:
+        query = query.filter(AmazonOriginSearchData.current_rangking_week >= weekly_ranking_min)
+    if weekly_ranking_max is not None:
+        query = query.filter(AmazonOriginSearchData.current_rangking_week <= weekly_ranking_max)
+
+    # 变化范围筛选
+    if daily_change_min is not None:
+        query = query.filter(AmazonOriginSearchData.ranking_change_day >= daily_change_min)
+    if daily_change_max is not None:
+        query = query.filter(AmazonOriginSearchData.ranking_change_day <= daily_change_max)
+
+    if weekly_change_min is not None:
+        query = query.filter(AmazonOriginSearchData.ranking_change_week >= weekly_change_min)
+    if weekly_change_max is not None:
+        query = query.filter(AmazonOriginSearchData.ranking_change_week <= weekly_change_max)
+
+    # 份额范围筛选
+    if click_share_min is not None:
+        query = query.filter(AmazonOriginSearchData.top_product_click_share >= click_share_min)
+    if click_share_max is not None:
+        query = query.filter(AmazonOriginSearchData.top_product_click_share <= click_share_max)
+
+    if conversion_share_min is not None:
+        query = query.filter(AmazonOriginSearchData.top_product_conversion_share >= conversion_share_min)
+    if conversion_share_max is not None:
+        query = query.filter(AmazonOriginSearchData.top_product_conversion_share <= conversion_share_max)
+
+    # 转化率筛选 (计算字段: 转化份额/点击份额)
+    if conversion_rate_min is not None or conversion_rate_max is not None:
+        # 避免除零错误
+        query = query.filter(AmazonOriginSearchData.top_product_click_share > 0)
+
+        if conversion_rate_min is not None:
+            query = query.filter(
+                (AmazonOriginSearchData.top_product_conversion_share /
+                 AmazonOriginSearchData.top_product_click_share * 100) >= conversion_rate_min
+            )
+        if conversion_rate_max is not None:
+            query = query.filter(
+                (AmazonOriginSearchData.top_product_conversion_share /
+                 AmazonOriginSearchData.top_product_click_share * 100) <= conversion_rate_max
+            )
+
+    # 布尔值筛选
+    if is_new_day is not None:
+        query = query.filter(AmazonOriginSearchData.is_new_day == is_new_day)
+
+    if is_new_week is not None:
+        query = query.filter(AmazonOriginSearchData.is_new_week == is_new_week)
 
     return query
-
-
-def _parse_ranking_filter(ranking_str: str) -> Optional[tuple]:
-    """解析排名筛选条件
-    例如: "1-10", ">100", "<50", "=1"
-    """
-    if not ranking_str or ranking_str == "-":
-        return None
-
-    try:
-        if "-" in ranking_str and not ranking_str.startswith("-"):
-            # 范围筛选: "1-10"
-            parts = ranking_str.split("-")
-            if len(parts) == 2:
-                min_val = int(parts[0])
-                max_val = int(parts[1])
-                return (min_val, max_val)
-        elif ranking_str.startswith(">"):
-            # 大于筛选: ">100"
-            val = int(ranking_str[1:])
-            return (val + 1, 999999)
-        elif ranking_str.startswith("<"):
-            # 小于筛选: "<50"
-            val = int(ranking_str[1:])
-            return (1, val - 1)
-        elif ranking_str.startswith("="):
-            # 等于筛选: "=1"
-            val = int(ranking_str[1:])
-            return (val, val)
-        else:
-            # 直接数字: "10"
-            val = int(ranking_str)
-            return (val, val)
-    except ValueError:
-        return None
-
-    return None
-
-
-def _parse_change_filter(change_str: str) -> Optional[tuple]:
-    """解析变化筛选条件
-    例如: "-10到10", ">50", "<-20", "=0"
-    """
-    if not change_str or change_str == "-":
-        return None
-
-    try:
-        if "到" in change_str:
-            # 范围筛选: "-10到10"
-            parts = change_str.split("到")
-            if len(parts) == 2:
-                min_val = int(parts[0])
-                max_val = int(parts[1])
-                return (min_val, max_val)
-        elif change_str.startswith(">"):
-            # 大于筛选: ">50"
-            val = int(change_str[1:])
-            return (val + 1, 999999)
-        elif change_str.startswith("<"):
-            # 小于筛选: "<-20"
-            val = int(change_str[1:])
-            return (-999999, val - 1)
-        elif change_str.startswith("="):
-            # 等于筛选: "=0"
-            val = int(change_str[1:])
-            return (val, val)
-        else:
-            # 直接数字: "10"
-            val = int(change_str)
-            return (val, val)
-    except ValueError:
-        return None
-
-    return None
-
-
-def _parse_numeric_filter(numeric_str: str) -> Optional[tuple]:
-    """解析数值筛选条件 (用于份额、转化率等)
-    例如: "0.1-0.5", ">0.3", "<0.2", "=0.15"
-    """
-    if not numeric_str or numeric_str == "-":
-        return None
-
-    try:
-        if "-" in numeric_str and not numeric_str.startswith("-"):
-            # 范围筛选: "0.1-0.5"
-            parts = numeric_str.split("-")
-            if len(parts) == 2:
-                min_val = float(parts[0])
-                max_val = float(parts[1])
-                return (min_val, max_val)
-        elif numeric_str.startswith(">"):
-            # 大于筛选: ">0.3"
-            val = float(numeric_str[1:])
-            return (val, 999999.0)
-        elif numeric_str.startswith("<"):
-            # 小于筛选: "<0.2"
-            val = float(numeric_str[1:])
-            return (0.0, val)
-        elif numeric_str.startswith("="):
-            # 等于筛选: "=0.15"
-            val = float(numeric_str[1:])
-            return (val, val)
-        else:
-            # 直接数字: "0.25"
-            val = float(numeric_str)
-            return (val, val)
-    except ValueError:
-        return None
-
-    return None
 
 
 def _format_search_data(item: AmazonOriginSearchData) -> Dict[str, Any]:
