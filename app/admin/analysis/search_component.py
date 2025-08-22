@@ -1,5 +1,5 @@
 """
-搜索组件 - 优化高级搜索布局，使用collapse组件
+搜索组件 - 修复高级搜索打不开的问题
 """
 
 
@@ -8,7 +8,7 @@ class SearchComponent:
 
     @staticmethod
     def build_search_form() -> dict:
-        """构建搜索表单 - 优化第一行布局"""
+        """构建搜索表单 - 修复高级搜索显示问题"""
         return {
             "type": "form",
             "target": "data_table",
@@ -89,7 +89,7 @@ class SearchComponent:
                                 }
                             ]
                         },
-                        # 基础操作按钮 + 高级搜索按钮
+                        # 基础操作按钮 + 上传组件 + 高级搜索按钮
                         {
                             "type": "flex",
                             "className": "flex-none",
@@ -110,13 +110,21 @@ class SearchComponent:
                                     "label": "高级搜索",
                                     "level": "link",
                                     "size": "sm",
-                                    "actionType": "custom",
-                                    "script": "window.toggleAdvancedSearch = window.toggleAdvancedSearch || function() { const panel = document.querySelector('.advanced-search-panel'); if (panel) { panel.style.display = panel.style.display === 'none' ? 'block' : 'none'; } }; window.toggleAdvancedSearch();",
+                                    "className": "text-primary",
                                     "style": {
+                                        "color": "#007bff !important",
                                         "fontSize": "14px",
-                                        "fontWeight": "500",
-                                        "color": "#007bff",
-                                        "textDecoration": "none"
+                                        "fontWeight": "500"
+                                    },
+                                    "onEvent": {
+                                        "click": {
+                                            "actions": [
+                                                {
+                                                    "actionType": "custom",
+                                                    "script": "const panel = document.querySelector('.advanced-search-content'); if (panel) { panel.style.display = panel.style.display === 'none' ? 'block' : 'none'; }"
+                                                }
+                                            ]
+                                        }
                                     }
                                 }
                             ]
@@ -124,14 +132,12 @@ class SearchComponent:
                     ]
                 },
 
-                # 高级搜索面板 - 保持原有的紧凑样式
+                # 高级搜索内容面板
                 {
                     "type": "container",
-                    "className": "advanced-search-panel",
+                    "className": "advanced-search-content",
                     "style": {
-                        "display": "none",
-                        "margin": "0",
-                        "padding": "0"
+                        "display": "none"
                     },
                     "body": [
                         SearchComponent._build_new_product_filters(),
