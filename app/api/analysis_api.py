@@ -2,7 +2,7 @@ import logging
 from fastapi import APIRouter, Depends, Query, HTTPException
 from typing import Dict, Any, Optional, List
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, and_, or_, func
+from sqlalchemy import desc, and_, or_, func, asc
 from datetime import datetime, date
 
 from database import get_db
@@ -73,7 +73,7 @@ async def search_data(
         total_count = query.count()
 
         # 应用排序和分页
-        items = query.order_by(desc(AmazonOriginSearchData.created_at)).offset(skip).limit(perPage).all()
+        items = query.order_by(asc(AmazonOriginSearchData.current_rangking_day)).offset(skip).limit(perPage).all()
 
         # 格式化数据
         formatted_data = [_format_search_data(item) for item in items]

@@ -122,7 +122,7 @@ class TableComponent:
                 "style": {
                     "fontSize": "14px",
                     "whiteSpace": "nowrap",
-                    "textAlign": "center",
+                    "textAlign": "left",
                     "verticalAlign": "middle"
                 },
                 "labelClassName": "text-center vertical-middle font-size-14",
@@ -228,7 +228,7 @@ class TableComponent:
                 "style": {
                     "fontSize": "14px",
                     "whiteSpace": "nowrap",
-                    "textAlign": "center",
+                    "textAlign": "left",
                     "verticalAlign": "middle"
                 },
                 "labelClassName": "text-center vertical-middle font-size-14",
@@ -250,7 +250,7 @@ class TableComponent:
                 "style": {
                     "fontSize": "14px",
                     "whiteSpace": "nowrap",
-                    "textAlign": "center",
+                    "textAlign": "left",
                     "verticalAlign": "middle"
                 },
                 "labelClassName": "text-center vertical-middle font-size-14",
