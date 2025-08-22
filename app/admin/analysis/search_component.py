@@ -413,3 +413,6 @@ class SearchComponent:
                 }
             ]
         }
+
+    def _get_advanced_search_form(self) -> dict:
+        """获取高级搜索表单"""

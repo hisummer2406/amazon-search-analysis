@@ -46,19 +46,34 @@ class AmazonDataQueryAdmin(admin.PageAdmin):
         )
 
     def _combine_search_and_upload(self, search_form: dict, upload_buttons: dict) -> dict:
-        """将搜索表单和上传按钮组合到一起"""
-        # 找到搜索表单中的高级搜索按钮行
+        """将搜索表单和上传按钮组合到一起 - 适配collapse组件"""
         search_body = search_form.get("body", [])
 
-        # 修改第二行，将上传按钮添加到高级搜索按钮的右侧
-        for item in search_body:
-            if (item.get("type") == "flex" and
-                    item.get("justify") == "flex-start" and
-                    any(btn.get("name") == "advanced_toggle_btn"
-                        for btn in item.get("items", []))):
-                # 修改为 space-between 布局，并添加上传按钮
-                item["justify"] = "space-between"
-                item["items"].append(upload_buttons.get("items", [{}])[1])  # 获取上传按钮组
+        # 在collapse组件后添加上传按钮行
+        # 找到collapse组件的位置
+        collapse_index = -1
+        for i, item in enumerate(search_body):
+            if item.get("type") == "collapse":
+                collapse_index = i
                 break
+
+        if collapse_index >= 0:
+            # 在collapse组件后插入上传按钮
+            upload_row = {
+                "type": "flex",
+                "justify": "flex-end",  # 右对齐
+                "className": "mt-3 mb-3",
+                "items": upload_buttons.get("items", [{}])[1].get("items", [])  # 获取上传按钮组
+            }
+            search_body.insert(collapse_index + 1, upload_row)
+        else:
+            # 如果没找到collapse组件，就添加到最后
+            upload_row = {
+                "type": "flex",
+                "justify": "flex-end",
+                "className": "mt-3 mb-3",
+                "items": upload_buttons.get("items", [{}])[1].get("items", [])
+            }
+            search_body.append(upload_row)
 
         return search_form
