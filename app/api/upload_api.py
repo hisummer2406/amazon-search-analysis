@@ -67,6 +67,10 @@ async def process_csv_background(
 
 def validate_file(file: UploadFile) -> tuple[bool, str]:
     """验证上传文件"""
+    # 检查是否有文件
+    if not file or not file.filename:
+        return False, "请选择要上传的文件"
+
     # 检查文件类型
     if not file.filename.lower().endswith('.csv'):
         return False, "只支持CSV文件格式"
@@ -85,8 +89,13 @@ def validate_file(file: UploadFile) -> tuple[bool, str]:
     return True, "文件验证通过"
 
 
-def determine_data_type(filename: str) -> str:
-    """根据文件名确定数据类型"""
+def determine_data_type(filename: str, form_data_type: Optional[str] = None) -> str:
+    """根据文件名和表单数据确定数据类型"""
+    # 优先使用表单传递的数据类型
+    if form_data_type and form_data_type in ['daily', 'weekly']:
+        return form_data_type
+
+    # 否则从文件名判断
     filename_lower = filename.lower()
     if 'day' in filename_lower:
         return 'daily'
@@ -99,7 +108,7 @@ def determine_data_type(filename: str) -> str:
 @upload_router.post("/upload-csv")
 async def upload_csv_file(
         background_tasks: BackgroundTasks,
-        file: UploadFile = File(...),
+        file: UploadFile = File(..., description="上传的CSV文件"),
         data_type: Optional[str] = Form(None, description="数据类型: daily 或 weekly"),
         db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
@@ -115,27 +124,35 @@ async def upload_csv_file(
         上传结果
     """
     try:
+        logger.info(f"接收到文件上传请求: {file.filename if file else 'No file'}, data_type: {data_type}")
+
         # 验证文件
         is_valid, message = validate_file(file)
         if not is_valid:
-            raise HTTPException(status_code=400, detail=message)
+            logger.warning(f"文件验证失败: {message}")
+            return {
+                "status": 1,
+                "msg": message,
+                "data": None
+            }
 
         # 确定数据类型
-        if not data_type:
-            data_type = determine_data_type(file.filename)
+        actual_data_type = determine_data_type(file.filename, data_type)
+        logger.info(f"确定的数据类型: {actual_data_type}")
 
-        if data_type not in ['daily', 'weekly']:
-            raise HTTPException(
-                status_code=400,
-                detail="数据类型必须是 'daily' 或 'weekly'"
-            )
+        if actual_data_type not in ['daily', 'weekly']:
+            return {
+                "status": 1,
+                "msg": "数据类型必须是 'daily' 或 'weekly'",
+                "data": None
+            }
 
         # 生成唯一文件名
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         safe_filename = f"{timestamp}_{file.filename}"
 
         # 确定保存路径
-        upload_dir = Path(settings.UPLOAD_DIR) / data_type
+        upload_dir = Path(settings.UPLOAD_DIR) / actual_data_type
         file_path = upload_dir / safe_filename
 
         logger.info(f"开始处理上传文件: {file.filename} -> {file_path}")
@@ -143,14 +160,18 @@ async def upload_csv_file(
         # 保存文件
         success = await save_upload_file(file, str(file_path))
         if not success:
-            raise HTTPException(status_code=500, detail="文件保存失败")
+            return {
+                "status": 1,
+                "msg": "文件保存失败",
+                "data": None
+            }
 
         # 添加后台任务处理CSV
         background_tasks.add_task(
             process_csv_background,
             str(file_path),
             file.filename,
-            data_type,
+            actual_data_type,
             db
         )
 
@@ -159,20 +180,66 @@ async def upload_csv_file(
             "msg": "文件上传成功，正在后台处理中...",
             "data": {
                 "filename": file.filename,
-                "data_type": data_type,
+                "data_type": actual_data_type,
                 "file_size": getattr(file, 'size', 0),
                 "upload_time": datetime.now().isoformat()
             }
         }
 
-    except HTTPException:
-        raise
+    except HTTPException as e:
+        logger.error(f"HTTP异常: {e.detail}")
+        return {
+            "status": 1,
+            "msg": e.detail,
+            "data": None
+        }
     except Exception as e:
         logger.error(f"上传文件失败: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"文件上传失败: {str(e)}"
-        )
+        return {
+            "status": 1,
+            "msg": f"文件上传失败: {str(e)}",
+            "data": None
+        }
+
+
+# 添加一个简单的测试端点来验证文件上传
+@upload_router.post("/test-upload")
+async def test_upload_file(
+        file: UploadFile = File(..., description="测试上传文件"),
+        test_param: str = Form("test", description="测试参数")
+) -> Dict[str, Any]:
+    """测试文件上传端点，用于调试"""
+    try:
+        logger.info(f"测试上传 - 文件名: {file.filename}, 参数: {test_param}")
+
+        if not file or not file.filename:
+            return {
+                "status": 1,
+                "msg": "没有接收到文件",
+                "data": None
+            }
+
+        # 读取文件内容（仅用于测试，不保存）
+        content = await file.read()
+
+        return {
+            "status": 0,
+            "msg": "测试上传成功",
+            "data": {
+                "filename": file.filename,
+                "content_type": file.content_type,
+                "file_size": len(content),
+                "test_param": test_param
+            }
+        }
+
+    except Exception as e:
+        logger.error(f"测试上传失败: {e}")
+        return {
+            "status": 1,
+            "msg": f"测试上传失败: {str(e)}",
+            "data": None
+        }
 
 
 @upload_router.get("/processing-status")

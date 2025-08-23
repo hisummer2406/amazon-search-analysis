@@ -6,7 +6,7 @@ from fastapi import Request
 # 导入组件
 from app.admin.analysis.search_component import SearchComponent
 from app.admin.analysis.table_component import TableComponent
-from app.admin.analysis.upload_component import UploadComponent
+from app.admin.analysis.upload_component import DebugUploadComponent as UploadComponent
 
 
 @site.register_admin
