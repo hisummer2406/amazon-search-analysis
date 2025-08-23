@@ -375,13 +375,13 @@ class TableComponent:
                 "tpl": "<span class='${is_new_week ? \"status-new-week\" : \"status-normal\"}'>${is_new_week ? \"是\" : \"否\"}</span>"
             },
 
-            # 时间信息列
+            # 时间信息列'
             {
-                "name": "created_at",
+                "name": "report_date_day",
                 "label": "报告日期",
                 "type": "datetime",
                 "width": 140,
-                "format": "YYYY-MM-DD HH:mm",
+                "format": "YYYY-MM-DD",
                 "sortable": True,
                 "className": "cell-fixed-width",
                 "style": {
