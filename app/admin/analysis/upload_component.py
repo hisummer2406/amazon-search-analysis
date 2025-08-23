@@ -52,7 +52,7 @@ class UploadComponent:
                 "type": "form",
                 "api": {
                     "method": "post",
-                    "url": "/api/upload/file",
+                    "url": "/api/upload/upload-csv",
                     "messages": {
                         "success": "文件上传成功，正在后台处理数据...",
                         "failed": "文件上传失败，请检查文件格式"

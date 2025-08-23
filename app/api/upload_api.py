@@ -96,7 +96,7 @@ def determine_data_type(filename: str) -> str:
         return 'daily'  # 默认返回daily
 
 
-@upload_router.post("/file")
+@upload_router.post("/upload-csv")
 async def upload_csv_file(
         background_tasks: BackgroundTasks,
         file: UploadFile = File(...),
