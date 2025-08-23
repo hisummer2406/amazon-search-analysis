@@ -54,14 +54,6 @@ class UploadComponent:
             "body": {
                 "type": "form",
                 "encType": "multipart/form-data",
-                "api": {
-                    "method": "post",
-                    "url": "/api/upload/upload-csv",
-                    "data": {
-                        "file": "${file}",
-                        "data_type": data_type
-                    }
-                },
                 "body": [
                     {
                         "type": "input-file",
