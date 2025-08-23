@@ -11,7 +11,7 @@ from fastapi.responses import RedirectResponse
 from app.api.router import api_router
 from config import settings
 from database import engine, async_engine
-from app.admin.site import site
+from app.admin.admin_site import site
 from monitoring import SystemMonitor
 
 

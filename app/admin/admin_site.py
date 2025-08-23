@@ -1,4 +1,5 @@
 # app/admin/admin_site.py
+from fastapi_amis_admin import admin
 from fastapi_amis_admin.amis.components import App, Tpl, Page
 from fastapi_user_auth.admin import AuthAdminSite
 from config import settings
@@ -16,6 +17,7 @@ from fastapi_amis_admin.amis.components import (
     Flex,
     Service,
 )
+
 
 class CustomAdminSite(AdminSite):
 
@@ -37,6 +39,7 @@ class CustomAdminSite(AdminSite):
         app.pages = [{'children': children}] if children else []
         return app
 
+
 # 正确初始化站点设置
 site = CustomAdminSite(
     settings=Settings(
@@ -47,3 +50,15 @@ site = CustomAdminSite(
         site_url="/",
     )
 )
+
+# 取消注册默认的 HomeAdmin
+site.unregister_admin(admin.HomeAdmin)
+site.unregister_admin(admin.FileAdmin)
+
+
+from app.admin.analysis.analysis_admin import AmazonDataQueryAdmin
+from app.admin.user.user_admin import UserManagementAdmin
+# 注册分析模块
+site.register_admin(AmazonDataQueryAdmin)
+# 注册用户管理模块
+site.register_admin(UserManagementAdmin)
