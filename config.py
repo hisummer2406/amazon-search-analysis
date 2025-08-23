@@ -24,7 +24,6 @@ class Settings(BaseSettings):
 
     # 批处理配置
     BATCH_SIZE: int = 10000  # 每批处理1万条记录
-    MAX_WORKERS: int = 4  # 并发处理线程数
 
     # 查询限制
     QUERY_DAYS_LIMIT: int = 7  # 只查询最近7天数据
@@ -32,6 +31,19 @@ class Settings(BaseSettings):
     # Admin配置密钥：
     # python -c "import secrets; print(secrets.token_urlsafe(32))"
     ADMIN_SECRET_KEY: str
+
+    # 多核处理配置
+    MAX_WORKERS: int = 4  # 最大工作进程数
+    MULTIPROCESSING_THRESHOLD_GB: float = 1.0  # 使用多进程的文件大小阈值(GB)
+    MULTITHREADING_THRESHOLD_MB: float = 100.0  # 使用多线程的文件大小阈值(MB)
+
+    # 内存优化配置
+    CHUNK_QUEUE_SIZE: int = 50  # 数据队列最大大小
+    SMALL_BATCH_SIZE: int = 5000  # 多进程时的小批次大小
+
+    # 性能监控
+    ENABLE_PERFORMANCE_MONITORING: bool = True
+    MONITORING_INTERVAL_SECONDS: int = 5
 
     class Config:
         env_file = ".env"

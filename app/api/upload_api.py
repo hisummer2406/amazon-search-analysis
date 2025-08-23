@@ -10,6 +10,7 @@ from pathlib import Path
 
 from database import get_db
 from app.services.upload_service import UploadService
+from app.services.optimized_upload_service import OptimizedUploadService
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -65,6 +66,37 @@ async def process_csv_background(
         upload_service.cleanup_temp_file(file_path)
 
 
+async def process_csv_background_optimized(
+        file_path: str,
+        original_filename: str,
+        data_type: str,
+        db: Session
+):
+    """优化版后台处理CSV文件"""
+    # 使用优化版服务
+    upload_service = OptimizedUploadService(db)
+
+    try:
+        logger.info(f"开始优化处理文件: {original_filename}")
+
+        success, message, batch_record = await upload_service.process_csv_file(
+            file_path=file_path,
+            original_filename=original_filename,
+            data_type=data_type
+        )
+
+        if success:
+            logger.info(f"优化处理成功: {original_filename} - {message}")
+        else:
+            logger.error(f"优化处理失败: {original_filename} - {message}")
+
+    except Exception as e:
+        logger.error(f"优化处理异常: {e}")
+    finally:
+        # 清理临时文件
+        upload_service.cleanup_temp_file(file_path)
+
+
 def validate_file(file: UploadFile) -> tuple[bool, str]:
     """验证上传文件"""
     # 检查是否有文件
@@ -112,17 +144,6 @@ async def upload_csv_file(
         data_type: Optional[str] = Form(None, description="数据类型: daily 或 weekly"),
         db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
-    """
-    上传CSV文件并异步处理
-
-    Args:
-        file: 上传的CSV文件
-        data_type: 数据类型 ('daily' 或 'weekly')，如果未提供则从文件名自动判断
-        db: 数据库会话
-
-    Returns:
-        上传结果
-    """
     try:
         logger.info(f"接收到文件上传请求: {file.filename if file else 'No file'}, data_type: {data_type}")
 
@@ -168,7 +189,8 @@ async def upload_csv_file(
 
         # 添加后台任务处理CSV
         background_tasks.add_task(
-            process_csv_background,
+            # process_csv_background, 单线程
+            process_csv_background_optimized,
             str(file_path),
             file.filename,
             actual_data_type,
@@ -244,7 +266,7 @@ async def test_upload_file(
 
 @upload_router.get("/processing-status")
 async def get_processing_status(
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db())
 ) -> Dict[str, Any]:
     """获取正在处理中的任务状态"""
     try:
@@ -252,9 +274,10 @@ async def get_processing_status(
         from sqlalchemy import desc
 
         # 查询正在处理中的记录
-        processing_records = db.query(ImportBatchRecords).filter(
-            ImportBatchRecords.status == StatusEnum.PROCESSING
-        ).order_by(desc(ImportBatchRecords.created_at)).limit(10).all()
+        processing_records = (db.query(ImportBatchRecords)
+                              .order_by(desc(ImportBatchRecords.created_at))
+                              .limit(5)
+                              .all())
 
         # 格式化数据
         items = []

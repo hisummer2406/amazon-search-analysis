@@ -81,6 +81,7 @@ class UploadComponent:
                                 "description": f"请选择{title}的CSV文件，文件大小限制3GB",
                                 # 移除可能冲突的配置
                                 "autoUpload": False,
+                                "useChunk": False,
                                 "hideUploadButton": True,
                                 # 文件大小限制
                                 "maxSize": config.settings.MAX_FILE_SIZE,  # 3GBs
@@ -126,7 +127,7 @@ class UploadComponent:
                 "method": "get",
                 "url": "/api/upload/processing-status"
             },
-            "interval": 3000,  # 每3秒刷新一次
+            "interval": 5000,  # 每5秒刷新一次
             "body": {
                 "type": "container",
                 "visibleOn": "${items && items.length > 0}",

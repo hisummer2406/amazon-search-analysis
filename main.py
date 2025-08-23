@@ -12,6 +12,7 @@ from app.api.router import api_router
 from config import settings
 from database import engine, async_engine
 from app.admin.site import site
+from monitoring import SystemMonitor
 
 
 # 配置应用日志，每天自动生成新文件
@@ -142,6 +143,20 @@ async def health_check():
     except Exception as e:
         logger.error(f"❌ 健康检查失败: {e}")
         return {"status": "unhealthy", "error": str(e)}
+
+# 集成到FastAPI应用
+@app.get("/api/monitoring/metrics")
+async def get_system_metrics():
+    """获取系统监控指标"""
+    monitor = SystemMonitor()
+    metrics = await monitor.collect_metrics()
+    summary = monitor.get_performance_summary()
+
+    return {
+        'current_metrics': metrics,
+        'summary': summary,
+        'status': 'healthy' if metrics['cpu']['total'] < 80 and metrics['memory']['percent'] < 80 else 'warning'
+    }
 
 if __name__ == "__main__":
     import uvicorn
