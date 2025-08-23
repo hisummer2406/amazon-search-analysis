@@ -3,6 +3,8 @@
 上传组件 - 修复文件上传问题的最终版本
 针对 fastapi-amis-admin 框架优化
 """
+from imp import reload
+
 import config
 
 
@@ -83,6 +85,7 @@ class UploadComponent:
                     # 关键：状态监控区域
                     {
                         "type": "service",
+                        "name": "processing_status",
                         "api": "/api/upload/processing-status",
                         "interval": 5000,
                         "body": {
@@ -91,6 +94,7 @@ class UploadComponent:
                             "columns": [
                                 {"name": "batch_name", "label": "文件名", "width": 200},
                                 {"name": "progress_percent", "label": "进度", "type": "progress", "width": 150},
+                                {"name": "total_records", "label": "总记录数", "width": 100},
                                 {"name": "processing_seconds", "label": "耗时(秒)", "width": 100},
                                 {"name": "status", "label": "状态", "width": 100}
                             ],
@@ -101,6 +105,6 @@ class UploadComponent:
             },
             "actions": [
                 {"type": "button", "label": "取消", "actionType": "cancel"},
-                {"type": "submit", "label": "开始上传", "level": "primary", "close": False}
+                {"type": "submit", "label": "开始上传", "level": "primary" , "reload": "/admin/page/AmazonDataQueryAdmin"}
             ]
         }
