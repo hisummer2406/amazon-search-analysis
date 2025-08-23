@@ -1,3 +1,4 @@
+# app/services/upload_service.py - 修复版本
 import asyncio
 import logging
 import re
@@ -77,8 +78,13 @@ class UploadService:
                 # 6. 更新批次记录为完成状态
                 batch_record.status = StatusEnum.COMPLETED
                 batch_record.completed_at = datetime.now()
+
+                # 计算最终处理时间
+                final_processing_seconds = int((batch_record.completed_at - batch_record.created_at).total_seconds())
+                batch_record.processing_seconds = final_processing_seconds
+
                 self.db.commit()
-                logger.info(f"CSV文件处理完成: {original_filename}")
+                logger.info(f"CSV文件处理完成: {original_filename}, 总耗时: {final_processing_seconds}秒")
 
             return success, message, batch_record
 
@@ -122,7 +128,7 @@ class UploadService:
                 total_records=total_records,
                 status=StatusEnum.PROCESSING,
                 processed_keywords=0,
-                processing_seconds=0,
+                processing_seconds=0,  # 初始为0，后续实时计算
                 is_day_data=is_day_data,
                 is_week_data=is_week_data,
                 error_message="",
@@ -156,7 +162,10 @@ class UploadService:
             logger.info(f"开始分块处理文件: {file_path}")
 
             # 分块读取和处理
+            chunk_count = 0
             for chunk_df in self.csv_processor.read_csv_chunks(file_path):
+                chunk_start_time = datetime.now()
+
                 # 转换为数据库记录
                 records = self.csv_processor.convert_chunk_to_records(
                     chunk_df, report_date, data_type
@@ -173,29 +182,47 @@ class UploadService:
                     return False, error_msg
 
                 processed_count += len(records)
+                chunk_count += 1
 
-                # 更新进度
+                # 实时更新进度和处理时间
+                current_time = datetime.now()
+                current_processing_seconds = int((current_time - start_time).total_seconds())
+
                 batch_record.processed_keywords = processed_count
-                batch_record.processing_seconds = int(
-                    (datetime.now() - start_time).total_seconds()
-                )
-                self.db.commit()
+                batch_record.processing_seconds = current_processing_seconds
 
-                # 记录进度
-                if processed_count % (self.batch_size * 5) == 0:  # 每5批记录一次
+                # 每隔几个batch或一定时间提交一次，避免频繁提交
+                if chunk_count % 5 == 0 or (current_time - start_time).seconds >= 10:
+                    try:
+                        self.db.commit()
+                        logger.debug(
+                            f"更新进度: {processed_count}/{batch_record.total_records}, 耗时: {current_processing_seconds}秒")
+                    except Exception as e:
+                        logger.warning(f"更新进度失败: {e}")
+                        # 不影响主处理流程
+                        pass
+
+                # 记录详细进度（减少日志频率）
+                if chunk_count % 10 == 0:  # 每10批记录一次
                     progress = (
                                            processed_count / batch_record.total_records) * 100 if batch_record.total_records > 0 else 0
-                    logger.info(f"处理进度: {progress:.2f}% ({processed_count}/{batch_record.total_records})")
+                    chunk_time = (datetime.now() - chunk_start_time).total_seconds()
+                    logger.info(
+                        f"处理进度: {progress:.1f}% ({processed_count}/{batch_record.total_records}), 本批耗时: {chunk_time:.2f}秒")
 
-            # 更新最终记录数
+            # 最终更新记录数
             if batch_record.total_records != processed_count:
                 batch_record.total_records = processed_count
-                self.db.commit()
 
-            processing_time = int((datetime.now() - start_time).total_seconds())
-            logger.info(f"数据插入完成，总记录数: {processed_count}, 耗时: {processing_time}秒")
+            # 最终提交
+            final_processing_time = int((datetime.now() - start_time).total_seconds())
+            batch_record.processing_seconds = final_processing_time
+            self.db.commit()
 
-            return True, f"成功处理 {processed_count} 条记录"
+            logger.info(
+                f"数据插入完成，总记录数: {processed_count}, 总耗时: {final_processing_time}秒, 平均速度: {processed_count / final_processing_time:.1f}条/秒")
+
+            return True, f"成功处理 {processed_count} 条记录，耗时 {final_processing_time} 秒"
 
         except Exception as e:
             logger.error(f"分块处理失败: {e}")
@@ -224,6 +251,12 @@ class UploadService:
             batch_record.status = StatusEnum.FAILED
             batch_record.error_message = error_message
             batch_record.completed_at = datetime.now()
+
+            # 计算失败时的处理时间
+            if batch_record.created_at:
+                batch_record.processing_seconds = int(
+                    (batch_record.completed_at - batch_record.created_at).total_seconds())
+
             self.db.commit()
             logger.error(f"更新批次记录错误状态: {error_message}")
         except Exception as e:

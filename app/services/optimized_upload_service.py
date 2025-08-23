@@ -1,3 +1,4 @@
+# app/services/optimized_upload_service.py - 修复版本
 import asyncio
 import logging
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
@@ -65,6 +66,9 @@ class OptimizedUploadService(UploadService):
             data_type: str
     ) -> Tuple[bool, str, Optional[ImportBatchRecords]]:
         """多进程处理大文件"""
+        batch_record = None
+        start_time = datetime.now()
+
         try:
             # 1. 文件预处理
             is_valid, validation_message = self.file_validator.validate_csv_structure(file_path)
@@ -76,17 +80,17 @@ class OptimizedUploadService(UploadService):
             if not report_date:
                 return False, "无法解析文件日期", None
 
-            # 3. 文件分片
-            chunk_files = await self._create_file_chunks(file_path, num_chunks=self.max_workers)
-
-            # 4. 创建批次记录
+            # 3. 获取文件信息并创建批次记录
             file_info = self.csv_processor.get_file_info(file_path)
             batch_record = self._create_batch_record(
                 original_filename, report_date, file_info['estimated_records'],
                 data_type == 'daily', data_type == 'weekly'
             )
 
-            logger.info(f"开始多进程处理，分片数: {len(chunk_files)}")
+            logger.info(f"开始多进程处理，预估记录: {file_info['estimated_records']}")
+
+            # 4. 文件分片
+            chunk_files = await self._create_file_chunks(file_path, num_chunks=self.max_workers)
 
             # 5. 并行处理分片
             loop = asyncio.get_event_loop()
@@ -103,22 +107,60 @@ class OptimizedUploadService(UploadService):
                     )
                     tasks.append(task)
 
-                # 等待所有任务完成
-                results = await asyncio.gather(*tasks, return_exceptions=True)
+                # 等待所有任务完成，同时定期更新状态
+                results = []
+                completed_tasks = 0
+
+                while completed_tasks < len(tasks):
+                    # 等待任务完成，设置超时以便定期更新状态
+                    done, pending = await asyncio.wait(
+                        tasks,
+                        timeout=5.0,  # 每5秒检查一次
+                        return_when=asyncio.FIRST_COMPLETED
+                    )
+
+                    # 收集完成的结果
+                    for task in done:
+                        try:
+                            result = await task
+                            results.append(result)
+                            completed_tasks += 1
+
+                            # 更新进度
+                            progress = (completed_tasks / len(tasks)) * 100
+                            current_time = datetime.now()
+                            processing_seconds = int((current_time - start_time).total_seconds())
+
+                            # 更新批次记录
+                            batch_record.processing_seconds = processing_seconds
+                            self.db.commit()
+
+                            logger.info(f"多进程进度: {progress:.1f}% ({completed_tasks}/{len(tasks)})")
+
+                        except Exception as e:
+                            logger.error(f"任务执行异常: {e}")
+                            results.append({'error': str(e), 'processed_count': 0})
+                            completed_tasks += 1
+
+                    # 更新剩余任务列表
+                    tasks = list(pending)
 
             # 6. 处理结果
             total_processed = 0
             failed_chunks = 0
 
             for i, result in enumerate(results):
-                if isinstance(result, Exception):
+                if isinstance(result, Exception) or 'error' in result:
                     logger.error(f"分片 {i} 处理失败: {result}")
                     failed_chunks += 1
                 else:
-                    total_processed += result['processed_count']
-                    logger.info(f"分片 {i} 完成，处理 {result['processed_count']} 条记录")
+                    total_processed += result.get('processed_count', 0)
+                    logger.info(f"分片 {i} 完成，处理 {result.get('processed_count', 0)} 条记录")
 
             # 7. 更新批次记录
+            final_time = datetime.now()
+            final_processing_seconds = int((final_time - start_time).total_seconds())
+
             if failed_chunks == 0:
                 batch_record.status = StatusEnum.COMPLETED
                 batch_record.processed_keywords = total_processed
@@ -131,17 +173,21 @@ class OptimizedUploadService(UploadService):
                 message = f"部分处理失败，成功处理 {total_processed} 条记录"
                 success = False
 
-            batch_record.completed_at = datetime.now()
+            batch_record.processing_seconds = final_processing_seconds
+            batch_record.completed_at = final_time
             self.db.commit()
 
             # 8. 清理分片文件
             await self._cleanup_chunk_files(chunk_files)
 
+            logger.info(f"多进程处理完成，总耗时: {final_processing_seconds}秒")
             return success, message, batch_record
 
         except Exception as e:
             logger.error(f"多进程处理异常: {e}")
-            return False, str(e), None
+            if batch_record:
+                self._update_batch_record_error(batch_record, str(e))
+            return False, str(e), batch_record
 
     async def _process_with_multithreading(
             self,
@@ -150,6 +196,9 @@ class OptimizedUploadService(UploadService):
             data_type: str
     ) -> Tuple[bool, str, Optional[ImportBatchRecords]]:
         """多线程处理中等大小文件"""
+        batch_record = None
+        start_time = datetime.now()
+
         try:
             # 验证和初始化
             is_valid, validation_message = self.file_validator.validate_csv_structure(file_path)
@@ -169,7 +218,7 @@ class OptimizedUploadService(UploadService):
             logger.info("开始多线程管道处理")
 
             # 创建数据队列
-            data_queue = asyncio.Queue(maxsize=50)  # 限制队列大小
+            data_queue = asyncio.Queue(maxsize=50)
 
             # 创建任务
             reader_task = asyncio.create_task(
@@ -178,10 +227,15 @@ class OptimizedUploadService(UploadService):
 
             writer_tasks = [
                 asyncio.create_task(
-                    self._data_writer_coroutine(f"writer_{i}", data_queue)
+                    self._data_writer_coroutine(f"writer_{i}", data_queue, batch_record, start_time)
                 )
                 for i in range(2)  # 2个写入协程
             ]
+
+            # 监控任务进度
+            monitor_task = asyncio.create_task(
+                self._monitor_progress(batch_record, start_time)
+            )
 
             # 等待读取完成
             await reader_task
@@ -193,20 +247,45 @@ class OptimizedUploadService(UploadService):
             # 等待写入完成
             results = await asyncio.gather(*writer_tasks)
 
+            # 停止监控
+            monitor_task.cancel()
+
             # 统计结果
             total_processed = sum(r['processed_count'] for r in results)
+            final_processing_seconds = int((datetime.now() - start_time).total_seconds())
 
             batch_record.status = StatusEnum.COMPLETED
             batch_record.processed_keywords = total_processed
             batch_record.total_records = total_processed
+            batch_record.processing_seconds = final_processing_seconds
             batch_record.completed_at = datetime.now()
             self.db.commit()
 
+            logger.info(f"多线程处理完成，总记录数: {total_processed}, 总耗时: {final_processing_seconds}秒")
             return True, f"多线程处理完成，总记录数: {total_processed}", batch_record
 
         except Exception as e:
             logger.error(f"多线程处理异常: {e}")
-            return False, str(e), None
+            if batch_record:
+                self._update_batch_record_error(batch_record, str(e))
+            return False, str(e), batch_record
+
+    async def _monitor_progress(self, batch_record: ImportBatchRecords, start_time: datetime):
+        """监控处理进度"""
+        try:
+            while batch_record.status == StatusEnum.PROCESSING:
+                await asyncio.sleep(5)  # 每5秒更新一次
+
+                current_time = datetime.now()
+                processing_seconds = int((current_time - start_time).total_seconds())
+
+                batch_record.processing_seconds = processing_seconds
+                self.db.commit()
+
+        except asyncio.CancelledError:
+            logger.info("进度监控任务已取消")
+        except Exception as e:
+            logger.error(f"进度监控异常: {e}")
 
     def _process_chunk_in_separate_process(
             self,
@@ -236,7 +315,8 @@ class OptimizedUploadService(UploadService):
                         processed_count += len(records)
 
             # 清理分片文件
-            os.unlink(chunk_file)
+            if os.path.exists(chunk_file):
+                os.unlink(chunk_file)
 
             logger.info(f"进程 {chunk_id} 完成，处理 {processed_count} 条记录")
 
@@ -248,6 +328,13 @@ class OptimizedUploadService(UploadService):
 
         except Exception as e:
             logger.error(f"进程 {chunk_id} 处理失败: {e}")
+            # 确保清理文件
+            try:
+                if os.path.exists(chunk_file):
+                    os.unlink(chunk_file)
+            except:
+                pass
+
             return {
                 'chunk_id': chunk_id,
                 'processed_count': 0,
@@ -289,13 +376,15 @@ class OptimizedUploadService(UploadService):
     async def _data_writer_coroutine(
             self,
             writer_name: str,
-            data_queue: asyncio.Queue
+            data_queue: asyncio.Queue,
+            batch_record: ImportBatchRecords,
+            start_time: datetime
     ) -> Dict[str, Any]:
         """数据写入协程"""
         from app.models.analysis_schemas import AmazonOriginSearchData
 
         processed_count = 0
-        start_time = datetime.now()
+        writer_start_time = datetime.now()
 
         try:
             while True:
@@ -319,7 +408,7 @@ class OptimizedUploadService(UploadService):
         except Exception as e:
             logger.error(f"{writer_name} 失败: {e}")
 
-        processing_time = (datetime.now() - start_time).total_seconds()
+        processing_time = (datetime.now() - writer_start_time).total_seconds()
 
         return {
             'writer_name': writer_name,
@@ -335,39 +424,45 @@ class OptimizedUploadService(UploadService):
 
         logger.info(f"分割文件 {file_path}，目标分片数: {num_chunks}")
 
-        with open(file_path, 'r', encoding='utf-8') as source:
-            # 读取头部信息（前2行）
-            header_lines = [source.readline(), source.readline()]
+        try:
+            with open(file_path, 'r', encoding='utf-8') as source:
+                # 读取头部信息（前2行）
+                header_lines = [source.readline(), source.readline()]
+                current_pos = source.tell()
 
-            current_pos = source.tell()
+                for chunk_id in range(num_chunks):
+                    chunk_filename = f"{file_path}.chunk_{chunk_id}"
 
-            for chunk_id in range(num_chunks):
-                chunk_filename = f"{file_path}.chunk_{chunk_id}"
+                    # 计算这个分片应该读取的字节数
+                    if chunk_id == num_chunks - 1:
+                        # 最后一个分片读取剩余所有内容
+                        bytes_to_read = file_size - current_pos
+                    else:
+                        bytes_to_read = chunk_size
 
-                # 计算这个分片应该读取的字节数
-                if chunk_id == num_chunks - 1:
-                    # 最后一个分片读取剩余所有内容
-                    bytes_to_read = file_size - current_pos
-                else:
-                    bytes_to_read = chunk_size
+                    with open(chunk_filename, 'w', encoding='utf-8') as chunk_file:
+                        # 写入头部
+                        chunk_file.writelines(header_lines)
 
-                with open(chunk_filename, 'w', encoding='utf-8') as chunk_file:
-                    # 写入头部
-                    chunk_file.writelines(header_lines)
+                        # 写入数据行
+                        bytes_read = 0
+                        while bytes_read < bytes_to_read:
+                            line = source.readline()
+                            if not line:  # 文件结束
+                                break
+                            chunk_file.write(line)
+                            bytes_read += len(line.encode('utf-8'))
 
-                    # 写入数据行
-                    bytes_read = 0
-                    while bytes_read < bytes_to_read:
-                        line = source.readline()
-                        if not line:  # 文件结束
-                            break
-                        chunk_file.write(line)
-                        bytes_read += len(line.encode('utf-8'))
+                        current_pos = source.tell()
 
-                    current_pos = source.tell()
+                    chunk_files.append(chunk_filename)
+                    logger.info(f"创建分片 {chunk_id}: {chunk_filename}")
 
-                chunk_files.append(chunk_filename)
-                logger.info(f"创建分片 {chunk_id}: {chunk_filename}")
+        except Exception as e:
+            logger.error(f"创建文件分片失败: {e}")
+            # 清理已创建的分片
+            await self._cleanup_chunk_files(chunk_files)
+            raise
 
         return chunk_files
 

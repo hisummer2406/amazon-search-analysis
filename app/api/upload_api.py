@@ -1,14 +1,16 @@
+# app/api/upload_api.py - 修复版本
 import logging
 import os
 import aiofiles
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Form, BackgroundTasks
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import desc
 from typing import Dict, Any, Optional
 from datetime import datetime
 from pathlib import Path
 
-from database import get_db
+from database import get_db, SessionFactory  # 导入SessionFactory
 from app.services.upload_service import UploadService
 from app.services.optimized_upload_service import OptimizedUploadService
 from config import settings
@@ -35,66 +37,80 @@ async def save_upload_file(upload_file: UploadFile, file_path: str) -> bool:
         return False
 
 
-async def process_csv_background(
+def process_csv_background_optimized_sync(
         file_path: str,
         original_filename: str,
-        data_type: str,
-        db: Session
+        data_type: str
 ):
-    """后台处理CSV文件"""
-    upload_service = UploadService(db)
+    """
+    同步版本的后台处理函数 - 独立数据库会话
+    FastAPI的BackgroundTasks需要同步函数
+    """
+    # 创建独立的数据库会话，避免与API请求共享
+    with SessionFactory() as independent_db:
+        try:
+            logger.info(f"开始独立会话处理文件: {original_filename}")
 
-    try:
-        logger.info(f"开始后台处理文件: {original_filename}")
+            # 使用独立的数据库会话创建服务
+            upload_service = OptimizedUploadService(independent_db)
 
-        # 处理CSV文件
-        success, message, batch_record = await upload_service.process_csv_file(
-            file_path=file_path,
-            original_filename=original_filename,
-            data_type=data_type
-        )
+            # 由于BackgroundTasks期望同步函数，这里不使用async
+            success, message, batch_record = _process_csv_sync(
+                upload_service,
+                file_path,
+                original_filename,
+                data_type
+            )
 
-        if success:
-            logger.info(f"文件处理成功: {original_filename} - {message}")
-        else:
-            logger.error(f"文件处理失败: {original_filename} - {message}")
+            if success:
+                logger.info(f"独立会话处理成功: {original_filename} - {message}")
+            else:
+                logger.error(f"独立会话处理失败: {original_filename} - {message}")
 
-    except Exception as e:
-        logger.error(f"后台处理文件异常: {e}")
-    finally:
-        # 清理临时文件
-        upload_service.cleanup_temp_file(file_path)
+        except Exception as e:
+            logger.error(f"独立会话处理异常: {e}")
+        finally:
+            # 清理临时文件
+            try:
+                if os.path.exists(file_path):
+                    os.unlink(file_path)
+                    logger.info(f"清理临时文件: {file_path}")
+            except Exception as e:
+                logger.warning(f"清理临时文件失败: {e}")
 
 
-async def process_csv_background_optimized(
+def _process_csv_sync(
+        upload_service: OptimizedUploadService,
         file_path: str,
         original_filename: str,
-        data_type: str,
-        db: Session
+        data_type: str
 ):
-    """优化版后台处理CSV文件"""
-    # 使用优化版服务
-    upload_service = OptimizedUploadService(db)
+    """同步处理CSV文件的内部函数"""
+    import asyncio
 
+    # 在新的事件循环中运行异步处理
     try:
-        logger.info(f"开始优化处理文件: {original_filename}")
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
 
-        success, message, batch_record = await upload_service.process_csv_file(
-            file_path=file_path,
-            original_filename=original_filename,
-            data_type=data_type
+        result = loop.run_until_complete(
+            upload_service.process_csv_file(
+                file_path=file_path,
+                original_filename=original_filename,
+                data_type=data_type
+            )
         )
 
-        if success:
-            logger.info(f"优化处理成功: {original_filename} - {message}")
-        else:
-            logger.error(f"优化处理失败: {original_filename} - {message}")
+        return result
 
     except Exception as e:
-        logger.error(f"优化处理异常: {e}")
+        logger.error(f"同步处理CSV异常: {e}")
+        return False, str(e), None
     finally:
-        # 清理临时文件
-        upload_service.cleanup_temp_file(file_path)
+        try:
+            loop.close()
+        except:
+            pass
 
 
 def validate_file(file: UploadFile) -> tuple[bool, str]:
@@ -142,7 +158,7 @@ async def upload_csv_file(
         background_tasks: BackgroundTasks,
         file: UploadFile = File(..., description="上传的CSV文件"),
         data_type: Optional[str] = Form(None, description="数据类型: daily 或 weekly"),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db)  # 仅用于验证和初始响应
 ) -> Dict[str, Any]:
     try:
         logger.info(f"接收到文件上传请求: {file.filename if file else 'No file'}, data_type: {data_type}")
@@ -187,14 +203,12 @@ async def upload_csv_file(
                 "data": None
             }
 
-        # 添加后台任务处理CSV
+        # 添加后台任务处理CSV - 使用独立数据库会话
         background_tasks.add_task(
-            # process_csv_background, 单线程
-            process_csv_background_optimized,
+            process_csv_background_optimized_sync,  # 使用同步版本
             str(file_path),
             file.filename,
-            actual_data_type,
-            db
+            actual_data_type
         )
 
         return {
@@ -265,109 +279,59 @@ async def test_upload_file(
 
 
 @upload_router.get("/processing-status")
-async def get_processing_status(
-        db: Session = Depends(get_db)
-) -> Dict[str, Any]:
-    """获取正在处理中的任务状态"""
-    try:
-        from app.models.import_schemas import ImportBatchRecords, StatusEnum
-        from sqlalchemy import desc
+async def get_processing_status():
+    with SessionFactory() as db:
+        try:
+            from app.models.import_schemas import ImportBatchRecords, StatusEnum
+            from datetime import datetime
+            from sqlalchemy import desc
 
-        # 查询正在处理中的记录
-        processing_records = (db.query(ImportBatchRecords)
-                              .order_by(desc(ImportBatchRecords.created_at))
-                              .limit(5)
-                              .all())
+            records = db.query(ImportBatchRecords).order_by(desc(ImportBatchRecords.created_at)).limit(5).all()
 
-        # 格式化数据
-        items = []
-        for record in processing_records:
-            progress = 0
-            if record.total_records > 0:
-                progress = (record.processed_keywords / record.total_records) * 100
+            items = []
+            for r in records:
+                try:
+                    # 修复时区问题：确保时间对象一致性
+                    current_time = datetime.now()
+                    created_time = r.created_at
 
-            items.append({
-                "id": record.id,
-                "batch_name": record.batch_name,
-                "status": record.status.value,
-                "total_records": record.total_records,
-                "processed_keywords": record.processed_keywords,
-                "progress_percent": round(progress, 2),
-                "processing_seconds": record.processing_seconds,
-                "is_day_data": record.is_day_data,
-                "is_week_data": record.is_week_data,
-                "created_at": record.created_at.isoformat()
-            })
+                    # 如果created_at有时区信息，移除它
+                    if hasattr(created_time, 'tzinfo') and created_time.tzinfo is not None:
+                        created_time = created_time.replace(tzinfo=None)
 
-        return {
-            "status": 0,
-            "msg": "获取成功",
-            "data": {
-                "items": items,
-                "count": len(items)
+                    if r.status.value == 'PROCESSING':
+                        seconds = int((current_time - created_time).total_seconds())
+                    else:
+                        seconds = r.processing_seconds or 0
+
+                except Exception as time_error:
+                    # 如果时间计算失败，使用默认值
+                    seconds = r.processing_seconds or 0
+
+                items.append({
+                    "batch_name": r.batch_name,
+                    "status": "处理中" if r.status.value == 'PROCESSING' else r.status.value,
+                    "progress_percent": round((r.processed_keywords / max(r.total_records, 1)) * 100, 1),
+                    "processing_seconds": seconds,
+                    "processed_keywords": r.processed_keywords,
+                    "total_records": r.total_records
+                })
+
+            return {
+                "status": 0,
+                "msg": "success",
+                "data": {"items": items}
             }
-        }
 
-    except Exception as e:
-        logger.error(f"获取处理状态失败: {e}")
-        return {
-            "status": 1,
-            "msg": f"获取状态失败: {str(e)}",
-            "data": {
-                "items": [],
-                "count": 0
-            }
-        }
+        except Exception as e:
+            logger.error(f"获取处理状态失败: {e}")
+            return {"status": 1, "msg": str(e), "data": {"items": []}}
 
-
-@upload_router.get("/recent-completed")
-async def get_recent_completed(
-        limit: int = 5,
-        db: Session = Depends(get_db)
-) -> Dict[str, Any]:
-    """获取最近完成的任务"""
-    try:
-        from app.models.import_schemas import ImportBatchRecords, StatusEnum
-        from sqlalchemy import desc
-
-        # 查询最近完成的记录
-        completed_records = db.query(ImportBatchRecords).filter(
-            ImportBatchRecords.status.in_([StatusEnum.COMPLETED, StatusEnum.FAILED])
-        ).order_by(desc(ImportBatchRecords.completed_at)).limit(limit).all()
-
-        # 格式化数据
-        items = []
-        for record in completed_records:
-            items.append({
-                "id": record.id,
-                "batch_name": record.batch_name,
-                "status": record.status.value,
-                "total_records": record.total_records,
-                "processed_keywords": record.processed_keywords,
-                "processing_seconds": record.processing_seconds,
-                "is_day_data": record.is_day_data,
-                "is_week_data": record.is_week_data,
-                "error_message": record.error_message,
-                "created_at": record.created_at.isoformat(),
-                "completed_at": record.completed_at.isoformat() if record.completed_at else None
-            })
-
-        return {
-            "status": 0,
-            "msg": "获取成功",
-            "data": {
-                "items": items,
-                "count": len(items)
-            }
-        }
-
-    except Exception as e:
-        logger.error(f"获取完成记录失败: {e}")
-        return {
-            "status": 1,
-            "msg": f"获取记录失败: {str(e)}",
-            "data": {
-                "items": [],
-                "count": 0
-            }
-        }
+def _get_status_display(status: 'StatusEnum') -> str:
+    """获取状态显示文本"""
+    status_map = {
+        'PROCESSING': '处理中',
+        'COMPLETED': '已完成',
+        'FAILED': '失败'
+    }
+    return status_map.get(status.value, status.value)
