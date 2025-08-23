@@ -266,7 +266,7 @@ async def test_upload_file(
 
 @upload_router.get("/processing-status")
 async def get_processing_status(
-        db: Session = Depends(get_db())
+        db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """获取正在处理中的任务状态"""
     try:
