@@ -3,6 +3,7 @@
 上传组件 - 修复文件上传问题的最终版本
 针对 fastapi-amis-admin 框架优化
 """
+import config
 
 
 class UploadComponent:
@@ -53,19 +54,6 @@ class UploadComponent:
             "size": "lg",
             "body": {
                 "type": "form",
-                "api": {
-                    "method": "post",
-                    "url": "/api/upload/upload-csv",
-                    # 关键修复1: 设置正确的Content-Type
-                    "dataType": "form-data",
-                    "data": {
-                        "&": "$$",  # 传递整个表单数据
-                    },
-                    "messages": {
-                        "success": "文件上传成功，正在后台处理数据...",
-                        "failed": "文件上传失败，请检查文件格式"
-                    }
-                },
                 # 关键修复2: 明确设置表单编码
                 "encType": "multipart/form-data",
                 "body": [
@@ -95,7 +83,8 @@ class UploadComponent:
                                 "autoUpload": False,
                                 "hideUploadButton": True,
                                 # 文件大小限制
-                                "maxSize": 3221225472,  # 3GB
+                                "maxSize": config.settings.MAX_FILE_SIZE,  # 3GBs
+                                "receiver": "/api/upload/upload-csv",
                             },
                             {
                                 "type": "hidden",
@@ -104,17 +93,12 @@ class UploadComponent:
                             }
                         ]
                     },
-
                     # 处理状态显示区域
                     UploadComponent._build_status_section(),
-
                     {
                         "type": "divider"
                     },
                 ],
-                # 表单提交后的操作
-                "redirect": "/admin/data-analysis",
-                "reload": "data_table"
             },
             "actions": [
                 {
@@ -127,7 +111,8 @@ class UploadComponent:
                     "type": "submit",
                     "label": "开始上传",
                     "level": "primary",
-                    "className": "upload-submit-btn"
+                    "className": "upload-submit-btn",
+                    "close": False
                 }
             ]
         }
@@ -220,25 +205,6 @@ class DebugUploadComponent(UploadComponent):
     """调试版本的上传组件，包含测试功能"""
 
     @staticmethod
-    def build_upload_buttons() -> dict:
-        """构建上传按钮区域 - 包含调试功能"""
-        base_buttons = UploadComponent.build_upload_buttons()
-
-        # 添加测试按钮
-        test_button = {
-            "type": "button",
-            "label": "测试上传",
-            "level": "warning",
-            "size": "sm",
-            "className": "ml-2",
-            "actionType": "dialog",
-            "dialog": DebugUploadComponent._get_test_upload_dialog()
-        }
-
-        base_buttons["items"][1]["items"].append(test_button)
-        return base_buttons
-
-    @staticmethod
     def _get_test_upload_dialog() -> dict:
         """测试上传对话框"""
         return {
@@ -246,11 +212,6 @@ class DebugUploadComponent(UploadComponent):
             "size": "md",
             "body": {
                 "type": "form",
-                "api": {
-                    "method": "post",
-                    "url": "/api/upload/test-upload",
-                    "dataType": "form-data",
-                },
                 "encType": "multipart/form-data",
                 "body": [
                     {
@@ -264,6 +225,9 @@ class DebugUploadComponent(UploadComponent):
                         "name": "file",
                         "label": "选择任意文件",
                         "required": True,
+                        "accept": ".csv",
+                        "maxSize": config.settings.MAX_FILE_SIZE,
+                        "receiver": "/api/upload/test-upload",
                         "autoUpload": False,
                         "hideUploadButton": True,
                     },
@@ -289,26 +253,21 @@ class DebugUploadComponent(UploadComponent):
             ]
         }
 
+    @staticmethod
+    def build_upload_buttons() -> dict:
+        """构建上传按钮区域 - 包含调试功能"""
+        base_buttons = UploadComponent.build_upload_buttons()
 
-# ============= 使用说明 =============
-"""
-使用方法：
+        # 添加测试按钮
+        test_button = {
+            "type": "button",
+            "label": "测试上传",
+            "level": "warning",
+            "size": "sm",
+            "className": "ml-2",
+            "actionType": "dialog",
+            "dialog": DebugUploadComponent._get_test_upload_dialog()
+        }
 
-1. 在 analysis_admin.py 中替换导入：
-   from app.admin.analysis.upload_component import UploadComponent
-
-2. 如果需要调试，可以使用：
-   from app.admin.analysis.upload_component import DebugUploadComponent as UploadComponent
-
-3. 主要修复点：
-   - 设置正确的 dataType: "form-data"
-   - 设置 encType: "multipart/form-data"  
-   - 简化 input-file 配置，移除可能冲突的属性
-   - 使用 "&": "$$" 传递整个表单数据
-
-4. 后端 API 优化：
-   - 添加了更详细的日志
-   - 改进了错误处理
-   - 添加了测试端点
-   - 统一了返回格式
-"""
+        base_buttons["items"][1]["items"].append(test_button)
+        return base_buttons
