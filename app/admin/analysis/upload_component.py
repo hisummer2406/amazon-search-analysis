@@ -105,6 +105,6 @@ class UploadComponent:
             },
             "actions": [
                 {"type": "button", "label": "取消", "actionType": "cancel"},
-                {"type": "submit", "label": "开始上传", "level": "primary" , "reload": "data_table"}
+                {"type": "submit", "label": "开始上传", "level": "primary"}
             ]
         }

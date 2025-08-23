@@ -1,22 +1,11 @@
 # app/admin/admin_site.py
 from fastapi_amis_admin import admin
-from fastapi_amis_admin.amis.components import App, Tpl, Page
 from fastapi_user_auth.admin import AuthAdminSite
-from config import settings
-from fastapi_amis_admin.admin import AdminSite, PageSchemaAdmin, Settings
-from fastapi_amis_admin.amis.constants import SizeEnum
-from fastapi_amis_admin.amis.types import AmisAPI
-from fastapi_amis_admin.utils.translation import i18n as _
-from starlette.requests import Request
-from fastapi_user_auth.auth.schemas import SystemUserEnum
+from fastapi_amis_admin.amis.components import App, Tpl, Page
 
-from fastapi_amis_admin.amis.components import (
-    ActionType,
-    App,
-    Dialog,
-    Flex,
-    Service,
-)
+from config import settings
+from fastapi_amis_admin.admin import Settings, AdminSite
+from starlette.requests import Request
 
 
 class CustomAdminSite(AdminSite):
