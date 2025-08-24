@@ -29,7 +29,6 @@ class LoginAdmin(admin.PageAdmin):
                             justify-content: center;
                             align-items: center;
                             min-height: 80vh;
-                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                         }
                         .login-form {
                             width: 400px;
@@ -73,6 +72,15 @@ class LoginAdmin(admin.PageAdmin):
                             },
                             "body": [
                                 {
+                                    "type": "html",
+                                    "html": """
+                                             <div style="text-align: center; margin-bottom: 30px;">
+                                                 <img src="/static/amazon_logo.png" alt="Logo" style="height: 60px; margin-bottom: 15px;">
+                                                 <h2 style="color: #495057; margin: 0; font-weight: 600;">亚马逊数据分析系统</h2>
+                                             </div>
+                                             """
+                                },
+                                {
                                     "type": "input-text",
                                     "name": "username",
                                     "label": "用户名",
@@ -91,7 +99,8 @@ class LoginAdmin(admin.PageAdmin):
                                 {
                                     "type": "submit",
                                     "label": "登录",
-                                    "level": "primary"
+                                    "level": "primary",
+                                    "size": "lg"
                                 }
                             ]
                         }

@@ -36,7 +36,7 @@ class SimpleAuth:
             return {
                 'access_token': token,
                 'token_type': 'bearer',
-                'expires_in': 24 * 3600,
+                'expires_in': 24 * 3600 * 3,
                 'user': {
                     'id': user.id,
                     'username': user.user_name,
