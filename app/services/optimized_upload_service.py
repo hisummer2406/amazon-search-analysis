@@ -16,6 +16,70 @@ from config import settings
 logger = logging.getLogger(__name__)
 
 
+# 独立的工作函数，在文件顶部定义
+def _process_chunk_worker(
+        chunk_file: str,
+        report_date_str: str,
+        data_type: str,
+        chunk_id: int
+) -> Dict[str, Any]:
+    """独立的工作进程函数 - 不依赖类实例"""
+    try:
+        from datetime import datetime, date
+        from database import SessionFactory
+        from app.models.analysis_schemas import AmazonOriginSearchData
+        from app.services.csv_processor import CSVProcessor
+        import os
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        # 解析日期
+        report_date = date.fromisoformat(report_date_str)
+
+        processor = CSVProcessor(batch_size=5000)
+        processed_count = 0
+
+        # 创建独立的数据库会话
+        with SessionFactory() as db_session:
+            for chunk_df in processor.read_csv_chunks(chunk_file):
+                records = processor.convert_chunk_to_records(
+                    chunk_df, report_date, data_type
+                )
+
+                if records:
+                    db_session.bulk_insert_mappings(AmazonOriginSearchData, records)
+                    db_session.commit()
+                    processed_count += len(records)
+
+        # 清理分片文件
+        if os.path.exists(chunk_file):
+            os.unlink(chunk_file)
+
+        logger.info(f"进程 {chunk_id} 完成，处理 {processed_count} 条记录")
+
+        return {
+            'chunk_id': chunk_id,
+            'processed_count': processed_count,
+            'status': 'success'
+        }
+
+    except Exception as e:
+        # 确保清理文件
+        try:
+            if os.path.exists(chunk_file):
+                os.unlink(chunk_file)
+        except:
+            pass
+
+        return {
+            'chunk_id': chunk_id,
+            'processed_count': 0,
+            'status': 'failed',
+            'error': str(e)
+        }
+
+
 class OptimizedUploadService(UploadService):
     """优化版上传服务 - 继承原有功能并添加多核处理"""
 
@@ -65,7 +129,7 @@ class OptimizedUploadService(UploadService):
             original_filename: str,
             data_type: str
     ) -> Tuple[bool, str, Optional[ImportBatchRecords]]:
-        """多进程处理大文件"""
+        """多进程处理大文件 - 修复版本"""
         batch_record = None
         start_time = datetime.now()
 
@@ -92,65 +156,33 @@ class OptimizedUploadService(UploadService):
             # 4. 文件分片
             chunk_files = await self._create_file_chunks(file_path, num_chunks=self.max_workers)
 
-            # 5. 并行处理分片
+            # 5. 并行处理分片 - 不传递数据库连接
             loop = asyncio.get_event_loop()
             with ProcessPoolExecutor(max_workers=self.max_workers) as executor:
                 tasks = []
                 for i, chunk_file in enumerate(chunk_files):
                     task = loop.run_in_executor(
                         executor,
-                        self._process_chunk_in_separate_process,
+                        _process_chunk_worker,  # 改为独立函数
                         chunk_file,
-                        report_date,
+                        str(report_date),  # 转为字符串传递
                         data_type,
                         i
                     )
                     tasks.append(task)
 
-                # 等待所有任务完成，同时定期更新状态
-                results = []
-                completed_tasks = 0
-
-                while completed_tasks < len(tasks):
-                    # 等待任务完成，设置超时以便定期更新状态
-                    done, pending = await asyncio.wait(
-                        tasks,
-                        timeout=5.0,  # 每5秒检查一次
-                        return_when=asyncio.FIRST_COMPLETED
-                    )
-
-                    # 收集完成的结果
-                    for task in done:
-                        try:
-                            result = await task
-                            results.append(result)
-                            completed_tasks += 1
-
-                            # 更新进度
-                            progress = (completed_tasks / len(tasks)) * 100
-                            current_time = datetime.now()
-                            processing_seconds = int((current_time - start_time).total_seconds())
-
-                            # 更新批次记录
-                            batch_record.processing_seconds = processing_seconds
-                            self.db.commit()
-
-                            logger.info(f"多进程进度: {progress:.1f}% ({completed_tasks}/{len(tasks)})")
-
-                        except Exception as e:
-                            logger.error(f"任务执行异常: {e}")
-                            results.append({'error': str(e), 'processed_count': 0})
-                            completed_tasks += 1
-
-                    # 更新剩余任务列表
-                    tasks = list(pending)
+                # 等待所有任务完成
+                results = await asyncio.gather(*tasks, return_exceptions=True)
 
             # 6. 处理结果
             total_processed = 0
             failed_chunks = 0
 
             for i, result in enumerate(results):
-                if isinstance(result, Exception) or 'error' in result:
+                if isinstance(result, Exception):
+                    logger.error(f"分片 {i} 处理失败: {result}")
+                    failed_chunks += 1
+                elif 'error' in result:
                     logger.error(f"分片 {i} 处理失败: {result}")
                     failed_chunks += 1
                 else:
@@ -286,61 +318,6 @@ class OptimizedUploadService(UploadService):
             logger.info("进度监控任务已取消")
         except Exception as e:
             logger.error(f"进度监控异常: {e}")
-
-    def _process_chunk_in_separate_process(
-            self,
-            chunk_file: str,
-            report_date: date,
-            data_type: str,
-            chunk_id: int
-    ) -> Dict[str, Any]:
-        """在独立进程中处理数据块"""
-        try:
-            # 每个进程创建独立的数据库连接
-            from database import SessionFactory
-            from app.models.analysis_schemas import AmazonOriginSearchData
-
-            processor = CSVProcessor(batch_size=5000)
-            processed_count = 0
-
-            with SessionFactory() as db_session:
-                for chunk_df in processor.read_csv_chunks(chunk_file):
-                    records = processor.convert_chunk_to_records(
-                        chunk_df, report_date, data_type
-                    )
-
-                    if records:
-                        db_session.bulk_insert_mappings(AmazonOriginSearchData, records)
-                        db_session.commit()
-                        processed_count += len(records)
-
-            # 清理分片文件
-            if os.path.exists(chunk_file):
-                os.unlink(chunk_file)
-
-            logger.info(f"进程 {chunk_id} 完成，处理 {processed_count} 条记录")
-
-            return {
-                'chunk_id': chunk_id,
-                'processed_count': processed_count,
-                'status': 'success'
-            }
-
-        except Exception as e:
-            logger.error(f"进程 {chunk_id} 处理失败: {e}")
-            # 确保清理文件
-            try:
-                if os.path.exists(chunk_file):
-                    os.unlink(chunk_file)
-            except:
-                pass
-
-            return {
-                'chunk_id': chunk_id,
-                'processed_count': 0,
-                'status': 'failed',
-                'error': str(e)
-            }
 
     async def _data_reader_coroutine(
             self,

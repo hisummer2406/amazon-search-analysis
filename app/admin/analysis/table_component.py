@@ -15,7 +15,7 @@ class TableComponent:
                 "data": {
                     # 分页参数
                     "page": "${page || 1}",
-                    "perPage": "${perPage || 50}",
+                    "perPage": "${perPage || 100}",
 
                     # 基础搜索条件参数
                     "keyword": "${keyword}",
@@ -54,15 +54,15 @@ class TableComponent:
             # 默认参数
             "defaultParams": {
                 "page": 1,
-                "perPage": 50
+                "perPage": 100
             },
 
             # 表格列配置
             "columns": TableComponent._get_table_columns(),
 
             # 分页配置
-            "perPage": 50,
-            "perPageAvailable": [20, 50, 100, 200],
+            "perPage": 100,
+            "perPageAvailable": [100, 200, 500, 1000],
             "showPerPage": True,
             "showPageInput": True,
 
@@ -101,21 +101,6 @@ class TableComponent:
     def _get_table_columns() -> list:
         """获取表格列配置 - 统一表头字体，优化单元格显示"""
         return [
-            # 序号列
-            {
-                "name": "id",
-                "label": "序号",
-                "width": 60,
-                "type": "text",
-                "sortable": False,
-                "className": "text-center cell-narrow",
-                "style": {
-                    "fontSize": "14px",
-                    "textAlign": "center",
-                    "verticalAlign": "middle"
-                },
-                "labelClassName": "text-center vertical-middle font-size-14"
-            },
 
             # 关键词列 - 添加超链接和悬浮提示，不换行
             {

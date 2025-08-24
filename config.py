@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     MAX_FILE_SIZE: int = 3 * 1024 * 1024 * 1024  # 3GB for large files
 
     # 批处理配置
-    BATCH_SIZE: int = 10000  # 每批处理1万条记录
+    BATCH_SIZE: int = 5000  # 每批处理5000条记录
 
     # 查询限制
     QUERY_DAYS_LIMIT: int = 7  # 只查询最近7天数据
