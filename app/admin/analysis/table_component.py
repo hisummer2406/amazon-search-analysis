@@ -188,58 +188,36 @@ class TableComponent:
                 "labelClassName": "text-center vertical-middle font-size-14"
             },
 
-            # 趋势图列 - 基于amis chart文档正确实现
+            # 趋势图列 - 修复版本
             {
                 "name": "ranking_trend_day",
                 "label": "排名趋势",
                 "type": "chart",
-                "width": 110,
+                "trackExpression": "${ranking_trend_day|json}",
+                "width": 120,
                 "sortable": False,
-                "className": "text-center",
+                "className": "text-center chart-cell",
                 "labelClassName": "text-center vertical-middle font-size-14",
-                "height": 40,
+                "height": 50,
                 "config": {
                     "xAxis": {
                         "type": "category",
-                        "show": False,
-                        "data": {
-                            "source": "${ranking_trend_day}",
-                            "key": "date"
-                        }
+                        "data": [
+                            "Mon",
+                            "Tue",
+                            "Wed",
+                            "Thu",
+                            "Fri",
+                            "Sat"
+                        ]
                     },
                     "yAxis": {
-                        "type": "value",
-                        "show": False,
-                        "inverse": True
-                    },
-                    "grid": {
-                        "top": 5,
-                        "right": 5,
-                        "bottom": 5,
-                        "left": 5
-                    },
-                    "tooltip": {
-                        "trigger": "axis",
-                        "formatter": "{b}: 排名{c}"
+                        "type": "value"
                     },
                     "series": [
                         {
-                            "name": "排名",
-                            "type": "line",
-                            "smooth": True,
-                            "symbol": "circle",
-                            "symbolSize": 3,
-                            "lineStyle": {
-                                "width": 1.5,
-                                "color": "#1890ff"
-                            },
-                            "itemStyle": {
-                                "color": "#1890ff"
-                            },
-                            "data": {
-                                "source": "${ranking_trend_day}",
-                                "key": "ranking"
-                            }
+                            "data": "${ranking_trend_day || []}",
+                            "type": "line"
                         }
                     ]
                 }
