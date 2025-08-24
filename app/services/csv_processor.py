@@ -286,27 +286,24 @@ class CSVProcessor:
         return record
 
     def _update_trend_data(self, record: AmazonOriginSearchData, report_date: date, ranking: int):
-        """更新7天趋势数据，格式: [{"date": "2025-08-10", "ranking": 72}]"""
+        """更新7天趋势数据，格式: [{"date": "2025-08-10", "ranking": 85}, {"date": "2025-08-11", "ranking": 73}]"""
         trends = record.ranking_trend_day or []
         current_date_str = report_date.isoformat()
 
-        # 检查是否已存在当前日期的数据
-        date_exists = False
-        for i, trend_point in enumerate(trends):
-            if trend_point.get("date") == current_date_str:
-                # 更新现有日期的排名数据
-                trends[i]["ranking"] = ranking
-                date_exists = True
-                break
+        # 使用字典去重，相同日期只保留最新数据
+        trend_dict = {}
 
-        # 如果当前日期不存在，添加新数据点
-        if not date_exists:
-            new_point = {"date": current_date_str, "ranking": ranking}
-            trends.append(new_point)
+        # 保留现有数据
+        for trend in trends:
+            if isinstance(trend, dict) and "date" in trend and "ranking" in trend:
+                trend_dict[trend["date"]] = int(trend["ranking"])
 
-        # 按日期排序并保持最近7天数据
-        trends = sorted(trends, key=lambda x: x["date"])[-7:]
-        record.ranking_trend_day = trends
+        # 更新或添加当前日期数据
+        trend_dict[current_date_str] = ranking
+
+        # 转换回列表，按日期排序，保留最近7天
+        sorted_trends = sorted(trend_dict.items())[-7:]
+        record.ranking_trend_day = [{"date": date_str, "ranking": rank} for date_str, rank in sorted_trends]
 
     def _update_product_info(self, record: AmazonOriginSearchData, row: pd.Series):
         """更新商品信息"""
