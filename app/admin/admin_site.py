@@ -2,6 +2,7 @@
 from fastapi_amis_admin import admin
 from fastapi_user_auth.admin import AuthAdminSite
 from fastapi_amis_admin.amis.components import App, Tpl, Page
+from fastapi_user_auth.auth import Auth
 
 from config import settings
 from fastapi_amis_admin.admin import Settings, AdminSite
