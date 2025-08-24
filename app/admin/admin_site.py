@@ -78,7 +78,7 @@ class CustomAdminSite(AdminSite):
                             },
                             "body": {
                                 "type": "tpl",
-                                "tpl": "<h4 class='m-0'>欢迎，${data.username}</h4>"
+                                "tpl": "<h4 class='m-0'>欢迎，${username}</h4>"
                             }
                         },
                         {
@@ -105,7 +105,27 @@ class CustomAdminSite(AdminSite):
             ]
         }
 
-        app.footer = ''
+        app.footer = {
+            "type": "container",
+            "className": "text-center py-3 bg-gray-50 border-t",
+            "body": [
+                {
+                    "type": "divider",
+                    "className": "my-2"
+                },
+                {
+                    "type": "tpl",
+                    "tpl": "© 2025 亚马逊数据分析系统 v1.0 | 专业·高效·智能",
+                    "className": "text-xs text-gray-500"
+                },
+                {
+                    "type": "tpl",
+                    "tpl": "🔥技术支持: stone_summer24 | 数据驱动商业洞察",
+                    "className": "text-xs text-gray-400 mt-1"
+                }
+            ]
+        }
+
 
         children = await self.get_page_schema_children(request)
         app.pages = [{'children': children}] if children else []
