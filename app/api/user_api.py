@@ -1,18 +1,12 @@
 import logging
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from pydantic import Field
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from database import get_db
-from app.services.login_auth import auth_service
-from app.dependencies.login_auth import get_current_user
 from app.crud.user_crud import UserCenterCRUD
-from app.schemas.user_schemas import (
-    UserLoginResponse, UserCenterCreate, UserCenterUpdate
-)
+from app.schemas.user_schemas import (UserCenterCreate, UserCenterUpdate)
 
 logger = logging.getLogger(__name__)
 
@@ -90,60 +84,6 @@ async def get_user_detail(
             "msg": "获取用户详情失败"
         }
 
-@user_router.post("/login", response_model=UserLoginResponse)
-async def login(
-        form_data: OAuth2PasswordRequestForm = Depends(),
-        db: Session = Depends(get_db)
-) -> UserLoginResponse:
-    """用户登录"""
-    try:
-        # 查询用户
-        crud = UserCenterCRUD(db)
-        user = crud.get_user_by_username(form_data.username)
-
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="用户名或密码错误",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-        # 验证密码
-        if not crud.verify_password(form_data.password, user.hashed_pwd):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="用户名或密码错误",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-        # 生成访问令牌
-        access_token = auth_service.create_access_token(
-            user.id, user.user_name, user.is_super
-        )
-
-        return UserLoginResponse(
-            access_token=access_token,
-            token_type="bearer",
-            expires_in=24 * 3600,  # 24小时
-            user={
-                "id": user.id,
-                "user_name": user.user_name,
-                "is_active": user.is_active,
-                "is_super": user.is_super,
-                "created_at": user.created_at.isoformat(),
-                "updated_at": user.updated_at.isoformat()
-            }
-        )
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"登录失败: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="登录服务异常"
-        )
-
 
 @user_router.post("/create", response_model=Dict[str, Any])
 async def register(
@@ -214,14 +154,6 @@ async def update_user(
         }
 
 
-@user_router.post("/logout")
-async def logout(
-        current_user: dict = Depends(get_current_user)
-) -> Dict[str, str]:
-    """用户登出"""
-    return {"message": "登出成功"}
-
-
 @user_router.post("/toggle-status/{user_id}", response_model=Dict[str, Any])
 async def toggle_user_status(
         user_id: int,
@@ -250,4 +182,3 @@ async def toggle_user_status(
     except Exception as e:
         logger.error(f"切换用户状态失败: {e}")
         raise HTTPException(status_code=500, detail="状态切换失败")
-

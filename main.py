@@ -13,6 +13,7 @@ from config import settings
 from database import engine, async_engine
 from app.admin.admin_site import site
 from monitoring import SystemMonitor
+from app.middleware.auth_middleware import AdminAuthMiddleware
 
 
 # 配置应用日志，每天自动生成新文件
@@ -121,9 +122,11 @@ site.mount_app(app)
 #注册API路由
 app.include_router(api_router)
 
+app.add_middleware(AdminAuthMiddleware)
+
 @app.get("/")
 async def root():
-    return RedirectResponse(url="/admin/")
+    return RedirectResponse(url="/admin/login")
 
 @app.get("/health")
 async def health_check():

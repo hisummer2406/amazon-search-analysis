@@ -6,9 +6,11 @@ from sqlalchemy.orm import Session
 from database import get_db
 from app.services.analysis_service import AnalysisService
 from app.schemas.analysis_schemas import AnalysisSearchRequest, AnalysisSearchResponse
-from app.dependencies.login_auth import get_current_user
+from app.services.simple_auth import simple_auth
 
 logger = logging.getLogger(__name__)
+
+current_user = Depends(simple_auth.get_current_user)
 
 analysis_router = APIRouter()
 
