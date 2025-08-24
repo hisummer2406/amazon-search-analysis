@@ -1,5 +1,5 @@
 # app/admin/auth/login_admin.py
-"""登录页面管理"""
+"""登录页面管理 - 修复路由问题"""
 from fastapi import Request
 from fastapi_amis_admin.admin import admin
 from fastapi_amis_admin.amis import PageSchema, Page
@@ -15,9 +15,6 @@ class LoginAdmin(admin.PageAdmin):
         sort=1000,
         isDefaultPage=False
     )
-
-    # 修复路由路径
-    router_prefix = "/login"
 
     async def get_page(self, request: Request) -> Page:
         return Page(

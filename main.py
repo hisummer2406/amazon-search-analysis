@@ -49,12 +49,9 @@ def init_upload_dir():
     except Exception as e:
         logger.error(f"❌ 上传目录初始化失败: {e}")
 
-
-"""异步上下文管理器"""
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """异步上下文管理器"""
     # 应用启动时执行
     logger.info(f"🚀 {settings.APP_NAME} v{settings.VERSION} 启动中...")
     logger.info(f"📊 数据库Schema: {settings.DATABASE_SCHEMA}")
@@ -103,7 +100,7 @@ async def lifespan(app: FastAPI):
     logger.info("👋 应用已安全关闭")
 
 
-"""创建FastAPI应用"""
+# 创建FastAPI应用
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.VERSION,
@@ -128,11 +125,11 @@ app.include_router(api_router)
 # 挂载后台管理系统
 site.mount_app(app)
 # 登录验证
-app.add_middleware(AdminAuthMiddleware)
+# app.add_middleware(AdminAuthMiddleware)
 
 @app.get("/")
 async def root():
-    return RedirectResponse(url="/admin/login", status_code=302)
+    return RedirectResponse(url="/admin")
 
 @app.get("/health")
 async def health_check():

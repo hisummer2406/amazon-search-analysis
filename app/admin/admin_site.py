@@ -1,4 +1,4 @@
-# app/admin/admin_site.py - 简化版本
+# app/admin/admin_site.py - 简单修复版本
 from fastapi import Request
 from fastapi_amis_admin import admin
 from fastapi_amis_admin.amis.components import App, Tpl
@@ -20,42 +20,9 @@ class CustomAdminSite(AdminSite):
         app.header = Tpl(
             className="w-full",
             tpl='''<div class="flex justify-between">
-                        <div class="header-left"></div>
-                        <div class="header-right">
-                            <span id="user-info"></span>
-                            <button onclick="logout()" class="ml-2 btn btn-sm btn-danger" style="display:none;" id="logout-btn">退出</button>
-                        </div>
-                   </div>
-                   <script>
-                        // 检查登录状态
-                        const token = localStorage.getItem('access_token');
-                        if (token) {
-                            fetch('/api/auth/profile', {
-                                headers: {'Authorization': 'Bearer ' + token}
-                            }).then(res => res.json()).then(data => {
-                                if (data.status === 0) {
-                                    document.getElementById('user-info').innerHTML = '欢迎, ' + data.data.username;
-                                    document.getElementById('logout-btn').style.display = 'inline-block';
-                                }
-                            });
-                        }
-
-                        function logout() {
-                            localStorage.removeItem('access_token');
-                            window.location.href = '/admin/login';
-                        }
-
-                        // 自动添加token到请求头
-                        const originalFetch = window.fetch;
-                        window.fetch = function(url, options = {}) {
-                            const token = localStorage.getItem('access_token');
-                            if (token) {
-                                options.headers = options.headers || {};
-                                options.headers['Authorization'] = 'Bearer ' + token;
-                            }
-                            return originalFetch(url, options);
-                        };
-                   </script>''',
+                                   <div class="header-left"></div>
+                                   <div class="header-right"></div>
+                </div>''',
         )
         app.footer = ''
 
