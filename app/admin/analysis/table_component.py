@@ -107,7 +107,7 @@ class TableComponent:
                 "name": "keyword",
                 "label": "关键词",
                 "type": "tpl",
-                "width": 140,
+                "width": 150,
                 "searchable": True,
                 "className": "text-nowrap cell-wide",
                 "style": {
@@ -127,7 +127,7 @@ class TableComponent:
                 "name": "current_rangking_day",
                 "label": "日排名",
                 "type": "text",
-                "width": 50,
+                "width": 30,
                 "sortable": True,
                 "className": "text-center cell-narrow",
                 "style": {
@@ -144,7 +144,7 @@ class TableComponent:
                 "label": "日变化",
                 "type": "tpl",
                 "tpl": "<span class='${ranking_change_day > 0 ? \"change-positive\" : ranking_change_day < 0 ? \"change-negative\" : \"change-neutral\"}'>${ranking_change_day > 0 ? \"+\" + ranking_change_day : ranking_change_day}</span>",
-                "width": 50,
+                "width": 30,
                 "sortable": True,
                 "className": "text-center cell-narrow",
                 "style": {
@@ -160,7 +160,7 @@ class TableComponent:
                 "name": "current_rangking_week",
                 "label": "周排名",
                 "type": "text",
-                "width": 50,
+                "width": 30,
                 "sortable": True,
                 "className": "text-center cell-narrow",
                 "style": {
@@ -177,7 +177,7 @@ class TableComponent:
                 "label": "周变化",
                 "type": "tpl",
                 "tpl": "<span class='${ranking_change_week > 0 ? \"change-positive\" : ranking_change_week < 0 ? \"change-negative\" : \"change-neutral\"}'>${ranking_change_week > 0 ? \"+\" + ranking_change_week : ranking_change_week}</span>",
-                "width": 50,
+                "width": 30,
                 "sortable": True,
                 "className": "text-center cell-narrow",
                 "style": {
@@ -193,31 +193,37 @@ class TableComponent:
                 "name": "ranking_trend_day",
                 "label": "排名趋势",
                 "type": "chart",
-                "trackExpression": "${ranking_trend_day|json}",
-                "width": 120,
+                "width": 500,
                 "sortable": False,
                 "className": "text-center chart-cell",
                 "labelClassName": "text-center vertical-middle font-size-14",
-                "height": 50,
+                "height": 200,
                 "config": {
+                    "dataset": {
+                        "source": "${ranking_trend_day}"
+                    },
+                    "tooltip": {
+                        "trigger": "axis",
+                        "formatter": "function (params) { \
+                        let item = params[0]; \
+                        return '日期: ' + item.data.date + '<br/>排名: ' + item.data.ranking; \
+                      }"
+                    },
+
                     "xAxis": {
-                        "type": "category",
-                        "data": [
-                            "Mon",
-                            "Tue",
-                            "Wed",
-                            "Thu",
-                            "Fri",
-                            "Sat"
-                        ]
+                        "type": "category"
                     },
                     "yAxis": {
                         "type": "value"
                     },
                     "series": [
                         {
-                            "data": "${ranking_trend_day || []}",
-                            "type": "line"
+                            "type": "line",
+                            "smooth": True,
+                            "encode": {
+                                "x": "date",
+                                "y": "ranking"
+                            }
                         }
                     ]
                 }
@@ -228,7 +234,7 @@ class TableComponent:
                 "name": "top_brand",
                 "label": "品牌",
                 "type": "text",
-                "width": 120,
+                "width": 100,
                 "searchable": True,
                 "className": "text-nowrap cell-fixed-width",
                 "style": {
@@ -245,7 +251,7 @@ class TableComponent:
                 "name": "top_category",
                 "label": "类目",
                 "type": "text",
-                "width": 140,
+                "width": 100,
                 "searchable": True,
                 "className": "text-nowrap cell-wide",
                 "style": {
@@ -264,7 +270,7 @@ class TableComponent:
                 "name": "top_product_asin",
                 "label": "ASIN",
                 "type": "tpl",
-                "width": 120,
+                "width": 100,
                 "searchable": True,
                 "className": "cell-fixed-width",
                 "style": {
@@ -276,19 +282,18 @@ class TableComponent:
                 "tpl": "<a href='https://www.amazon.com/dp/${top_product_asin}' target='_blank' class='asin-link' title='查看商品详情'>${top_product_asin}</a>"
             },
 
-            # 商品标题 - 固定宽度，超出显示省略号，增加表头搜索
+            # 商品标题
             {
                 "name": "top_product_title",
                 "label": "商品标题",
                 "type": "text",
-                "width": 200,
+                "width": 300,
                 "searchable": True,
-                "className": "text-nowrap cell-wide",
+                "className": "text-normal cell-wide",
                 "style": {
                     "fontSize": "14px",
-                    "whiteSpace": "nowrap",
-                    "overflow": "hidden",
-                    "textOverflow": "ellipsis",
+                    "whiteSpace": "normal",
+                    "wordBreak": "break-word",
                     "textAlign": "left",
                     "verticalAlign": "middle"
                 },
@@ -301,7 +306,7 @@ class TableComponent:
                 "label": "点击份额",
                 "type": "tpl",
                 "tpl": "<span>${top_product_click_share}%</span>",
-                "width": 90,
+                "width": 50,
                 "sortable": True,
                 "className": "text-center cell-narrow",
                 "style": {
@@ -318,7 +323,7 @@ class TableComponent:
                 "label": "转化份额",
                 "type": "tpl",
                 "tpl": "<span>${top_product_conversion_share}%</span>",
-                "width": 90,
+                "width": 50,
                 "sortable": True,
                 "className": "text-center cell-narrow",
                 "style": {
@@ -335,7 +340,7 @@ class TableComponent:
                 "label": "转化率",
                 "type": "tpl",
                 "tpl": "<span class='${conversion_rate >= 5 ? \"conversion-high\" : conversion_rate >= 2 ? \"conversion-medium\" : \"conversion-low\"}'>${conversion_rate}%</span>",
-                "width": 80,
+                "width": 50,
                 "sortable": True,
                 "className": "text-center cell-narrow",
                 "style": {
@@ -351,7 +356,7 @@ class TableComponent:
                 "name": "is_new_day",
                 "label": "日新品",
                 "type": "tpl",
-                "width": 50,
+                "width": 30,
                 "className": "text-center cell-narrow",
                 "style": {
                     "fontSize": "14px",
@@ -367,7 +372,7 @@ class TableComponent:
                 "name": "is_new_week",
                 "label": "周新品",
                 "type": "tpl",
-                "width": 50,
+                "width": 30,
                 "className": "text-center cell-narrow",
                 "style": {
                     "fontSize": "14px",
@@ -383,7 +388,7 @@ class TableComponent:
                 "name": "report_date_day",
                 "label": "报告日期",
                 "type": "datetime",
-                "width": 140,
+                "width": 100,
                 "format": "YYYY-MM-DD",
                 "sortable": True,
                 "className": "cell-fixed-width",
