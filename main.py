@@ -14,7 +14,7 @@ from database import engine, async_engine
 from app.admin.admin_site import site
 from monitoring import SystemMonitor
 from app.admin.auth.login_admin import auth_router
-
+from app.middleware.auth_middleware import AdminAuthMiddleware
 
 # 配置应用日志，每天自动生成新文件
 def configure_logging():
@@ -122,12 +122,14 @@ app.include_router(auth_router)  # 使用新的登录页面路由
 
 # 挂载静态文件目录
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# 登录验证
+app.add_middleware(AdminAuthMiddleware)
+
 # 注册API路由
 app.include_router(api_router)
 # 挂载后台管理系统
 site.mount_app(app)
-# 登录验证
-# app.add_middleware(AdminAuthMiddleware)
 
 @app.get("/")
 async def root():

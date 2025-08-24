@@ -15,10 +15,11 @@ class AdminAuthMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         # 需要认证的路径
         self.protected_paths = [
-            "/admin/user",  # 用户管理页面
-            "/api/user/",  # 用户API
-            "/admin/page/AmazonDataQueryAdmin",  # 数据查询页面
-            "/admin/"  # 后台首页
+            "/admin/user",
+            "/admin/analysis",
+            "/api/analysis/search",
+            "/api/user/list",
+            "/api/user/register",
         ]
 
         # 排除的路径 - 不需要认证
@@ -30,7 +31,6 @@ class AdminAuthMiddleware(BaseHTTPMiddleware):
             "/docs",  # API文档
             "/redoc",  # API文档
             "/health",  # 健康检查
-            "/",  # 根路径
         ]
 
     async def dispatch(self, request: Request, call_next):
@@ -46,6 +46,8 @@ class AdminAuthMiddleware(BaseHTTPMiddleware):
             # 首先检查是否有Authorization头
             auth_header = request.headers.get('Authorization')
 
+            print(f"🔥Authorization: {auth_header}")
+
             # 如果是浏览器访问且没有token，重定向到登录页
             if not auth_header or not auth_header.startswith('Bearer '):
                 # 检查是否是API请求
@@ -57,6 +59,7 @@ class AdminAuthMiddleware(BaseHTTPMiddleware):
                         detail="未授权访问"
                     )
                 else:
+                    print(f"??path: {path}")
                     # 浏览器请求重定向到登录页
                     return RedirectResponse(url="/admin/login", status_code=302)
 
@@ -132,4 +135,35 @@ class AdminAuthMiddleware(BaseHTTPMiddleware):
                 return True
 
         # 默认不需要认证
+        return False
+
+    def _needs_auth2(self, path: str) -> bool:
+        """判断路径是否需要认证"""
+        print(f"🔍 Checking path: {path}")  # 更详细的日志
+        # 首先检查排除路径
+        excluded = False
+        for exclude_path in self.exclude_paths:
+            if path.startswith(exclude_path):
+                print(f"🚫 Path {path} starts with excluded path: {exclude_path}")
+                excluded = True
+                return False
+        if excluded:
+            print(f"✅ Path {path} is excluded.")
+        else:
+            print(f"ℹ️ Path {path} is not in excluded paths.")
+
+        # 检查需要认证的路径
+        protected = False
+        for protected_path in self.protected_paths:
+            if path.startswith(protected_path):
+                print(f"🔒 Path {path} starts with protected path: {protected_path}")
+                protected = True
+                return True
+        if protected:
+            print(f"✅ Path {path} is protected.")
+        else:
+            print(f"ℹ️ Path {path} is not in protected paths.")
+
+        # 默认不需要认证
+        print(f"⚠️ Path {path} does not need authentication.")
         return False
