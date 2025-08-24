@@ -188,21 +188,61 @@ class TableComponent:
                 "labelClassName": "text-center vertical-middle font-size-14"
             },
 
-            # 趋势图列
+            # 趋势图列 - 基于amis chart文档正确实现
             {
                 "name": "ranking_trend_day",
                 "label": "排名趋势",
-                "type": "tpl",
-                "tpl": "<div class='trend-chart'>趋势图</div>",
+                "type": "chart",
                 "width": 110,
                 "sortable": False,
                 "className": "text-center",
-                "style": {
-                    "fontSize": "14px",
-                    "textAlign": "center",
-                    "verticalAlign": "middle"
-                },
-                "labelClassName": "text-center vertical-middle font-size-14"
+                "labelClassName": "text-center vertical-middle font-size-14",
+                "height": 40,
+                "config": {
+                    "xAxis": {
+                        "type": "category",
+                        "show": False,
+                        "data": {
+                            "source": "${ranking_trend_day}",
+                            "key": "date"
+                        }
+                    },
+                    "yAxis": {
+                        "type": "value",
+                        "show": False,
+                        "inverse": True
+                    },
+                    "grid": {
+                        "top": 5,
+                        "right": 5,
+                        "bottom": 5,
+                        "left": 5
+                    },
+                    "tooltip": {
+                        "trigger": "axis",
+                        "formatter": "{b}: 排名{c}"
+                    },
+                    "series": [
+                        {
+                            "name": "排名",
+                            "type": "line",
+                            "smooth": True,
+                            "symbol": "circle",
+                            "symbolSize": 3,
+                            "lineStyle": {
+                                "width": 1.5,
+                                "color": "#1890ff"
+                            },
+                            "itemStyle": {
+                                "color": "#1890ff"
+                            },
+                            "data": {
+                                "source": "${ranking_trend_day}",
+                                "key": "ranking"
+                            }
+                        }
+                    ]
+                }
             },
 
             # 品牌
