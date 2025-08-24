@@ -14,6 +14,7 @@ from database import engine, async_engine
 from app.admin.admin_site import site
 from monitoring import SystemMonitor
 from app.middleware.auth_middleware import AdminAuthMiddleware
+from fastapi.responses import HTMLResponse
 
 
 # 配置应用日志，每天自动生成新文件
@@ -34,8 +35,10 @@ def configure_logging():
     # 控制台输出
     logging.StreamHandler()
 
+
 configure_logging()
 logger = logging.getLogger(__name__)
+
 
 def init_upload_dir():
     try:
@@ -48,6 +51,8 @@ def init_upload_dir():
 
 
 """异步上下文管理器"""
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 应用启动时执行
@@ -97,6 +102,7 @@ async def lifespan(app: FastAPI):
 
     logger.info("👋 应用已安全关闭")
 
+
 """创建FastAPI应用"""
 app = FastAPI(
     title=settings.APP_NAME,
@@ -117,16 +123,16 @@ app.add_middleware(
 
 # 挂载静态文件目录
 app.mount("/static", StaticFiles(directory="static"), name="static")
+# 注册API路由
+app.include_router(api_router)
 # 挂载后台管理系统
 site.mount_app(app)
-#注册API路由
-app.include_router(api_router)
-
+# 登录验证
 app.add_middleware(AdminAuthMiddleware)
 
 @app.get("/")
 async def root():
-    return RedirectResponse(url="/admin/login")
+    return RedirectResponse(url="/admin/login", status_code=302)
 
 @app.get("/health")
 async def health_check():
@@ -147,6 +153,7 @@ async def health_check():
         logger.error(f"❌ 健康检查失败: {e}")
         return {"status": "unhealthy", "error": str(e)}
 
+
 # 集成到FastAPI应用
 @app.get("/api/monitoring/metrics")
 async def get_system_metrics():
@@ -161,8 +168,10 @@ async def get_system_metrics():
         'status': 'healthy' if metrics['cpu']['total'] < 80 and metrics['memory']['percent'] < 80 else 'warning'
     }
 
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
         "main:app",
         host="0.0.0.0",

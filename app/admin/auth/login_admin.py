@@ -16,7 +16,7 @@ class LoginAdmin(admin.PageAdmin):
         isDefaultPage=False
     )
 
-    # 重写路由路径
+    # 修复路由路径
     router_prefix = "/login"
 
     async def get_page(self, request: Request) -> Page:
