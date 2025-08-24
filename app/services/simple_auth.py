@@ -68,14 +68,18 @@ class SimpleAuth:
         return user
 
     @staticmethod
-    def get_super_user(current_user: UserCenter = Depends(get_current_user)) -> UserCenter:
-        """获取超级用户"""
-        if not current_user.is_super:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="需要超级管理员权限"
-            )
-        return current_user
+    def get_super_user():
+        """获取超级用户依赖"""
+
+        def _get_super_user(current_user: UserCenter = Depends(simple_auth.get_current_user)) -> UserCenter:
+            if not current_user.is_super:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="需要超级管理员权限"
+                )
+            return current_user
+
+        return _get_super_user
 
 
 # 全局认证实例

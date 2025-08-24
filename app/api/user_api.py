@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from app.crud.user_crud import UserCenterCRUD
 from app.schemas.user_schemas import (UserCenterCreate, UserCenterUpdate)
+from app.services.simple_auth import simple_auth
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ async def get_users_list(
         per_page: int = Query(20, ge=1, le=100, description="每页数量"),
         user_name: Optional[str] = Query(None, description="搜索关键词"),
         is_active: Optional[bool] = Query(default=True, description="用户状态筛选"),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
 ) -> Dict[str, Any]:
     """获取用户列表 - 支持分页和搜索"""
     try:
@@ -88,7 +89,8 @@ async def get_user_detail(
 @user_router.post("/create", response_model=Dict[str, Any])
 async def register(
         user_data: UserCenterCreate,
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_user: dict = Depends(simple_auth.get_super_user()),
 ) -> Dict[str, Any]:
     """用户注册"""
     try:
@@ -121,7 +123,8 @@ async def register(
 async def update_user(
         user_id: int,
         user_data: UserCenterUpdate,
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_user: dict = Depends(simple_auth.get_super_user()),
 ) -> Dict[str, Any]:
     """更新用户信息"""
     try:
@@ -157,7 +160,8 @@ async def update_user(
 @user_router.post("/toggle-status/{user_id}", response_model=Dict[str, Any])
 async def toggle_user_status(
         user_id: int,
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_user: dict = Depends(simple_auth.get_super_user()),
 ) -> Dict[str, Any]:
     """切换用户状态（激活/禁用）"""
     try:

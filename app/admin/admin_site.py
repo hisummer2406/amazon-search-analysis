@@ -57,7 +57,7 @@ class CustomAdminSite(AdminSite):
             return payload;
         '''
 
-        # 修复header显示 - 使用正确的amis组件结构
+        # 修复header显示 - 使用JavaScript获取用户名
         app.header = {
             "type": "container",
             "className": "w-full bg-white shadow-sm px-4 py-1",
@@ -68,8 +68,18 @@ class CustomAdminSite(AdminSite):
                     "alignItems": "center",
                     "items": [
                         {
-                            "type": "tpl",
-                            "tpl": "<h4 class='m-0'>数据分析系统</h4>"
+                            "type": "service",
+                            "api": {
+                                "method": "get",
+                                "url": "/api/auth/profile",
+                                "headers": {
+                                    "Authorization": "${ls:access_token ? 'Bearer ' + ls:access_token : ''}"
+                                }
+                            },
+                            "body": {
+                                "type": "tpl",
+                                "tpl": "<h4 class='m-0'>欢迎，${data.username}</h4>"
+                            }
                         },
                         {
                             "type": "button",
@@ -82,9 +92,9 @@ class CustomAdminSite(AdminSite):
                                         {
                                             "actionType": "custom",
                                             "script": """
-                                                        localStorage.removeItem('access_token');
-                                                        window.location.href = '/admin/login';
-                                                    """
+                                                                localStorage.removeItem('access_token');
+                                                                window.location.href = '/admin/login';
+                                                            """
                                         }
                                     ]
                                 }

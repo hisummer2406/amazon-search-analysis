@@ -140,7 +140,10 @@ class UserManagementAdmin(admin.PageAdmin):
                             "actionType": "ajax",
                             "api": {
                                 "method": "post",
-                                "url": "/api/user/toggle-status/${id}"
+                                "url": "/api/user/toggle-status/${id}",
+                                "headers": {
+                                    "Authorization": "${ls:access_token ? 'Bearer ' + ls:access_token : ''}"
+                                }
                             },
                             "confirmText": "确认切换用户状态？"
                         }
@@ -169,7 +172,10 @@ class UserManagementAdmin(admin.PageAdmin):
                 "type": "form",
                 "api": {
                     "method": "post",
-                    "url": "/api/user/create"
+                    "url": "/api/user/create",
+                    "headers": {
+                        "Authorization": "${ls:access_token ? 'Bearer ' + ls:access_token : ''}"
+                    }
                 },
                 "data": {
                     "is_active": True  # 设置表单默认数据
@@ -253,7 +259,10 @@ class UserManagementAdmin(admin.PageAdmin):
                 "type": "form",
                 "initApi": {
                     "method": "get",
-                    "url": "/api/user/detail/${id}"
+                    "url": "/api/user/detail/${id}",
+                    "headers": {
+                        "Authorization": "${ls:access_token ? 'Bearer ' + ls:access_token : ''}"
+                    }
                 },
                 "body": [
                     {
@@ -310,7 +319,10 @@ class UserManagementAdmin(admin.PageAdmin):
                     "level": "primary",
                     "api": {
                         "method": "put",
-                        "url": "/api/user/update/${id}"
+                        "url": "/api/user/update/${id}",
+                        "headers": {
+                            "Authorization": "${ls:access_token ? 'Bearer ' + ls:access_token : ''}"
+                        }
                     }
                 }
             ]
