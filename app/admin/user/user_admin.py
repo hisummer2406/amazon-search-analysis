@@ -74,6 +74,9 @@ class UserManagementAdmin(admin.PageAdmin):
             "api": {
                 "method": "get",
                 "url": "/api/user/list",
+                "headers": {
+                    "Authorization": "${ls:access_token ? 'Bearer ' + ls:access_token : ''}"
+                },
                 "data": {
                     "page": "${page || 1}",
                     "per_page": "${perPage || 20}",

@@ -12,6 +12,9 @@ class TableComponent:
             "api": {
                 "method": "get",
                 "url": "/api/analysis/search",
+                "headers": {
+                    "Authorization": "${ls:access_token ? 'Bearer ' + ls:access_token : ''}"
+                },
                 "data": {
                     # 分页参数
                     "page": "${page || 1}",

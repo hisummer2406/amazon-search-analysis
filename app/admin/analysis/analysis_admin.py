@@ -1,5 +1,7 @@
 from fastapi_amis_admin.admin import admin
 from fastapi_amis_admin.amis import PageSchema, Page
+from fastapi_amis_admin.amis.components import App, Tpl
+
 from app.admin.admin_site import site
 from fastapi import Request
 
@@ -20,6 +22,53 @@ class AmazonDataQueryAdmin(admin.PageAdmin):
         isDefaultPage=True,
         sort=1
     )
+
+    async def _get_page_as_app(self, request: Request) -> App:
+        """自定义应用页面 - 添加认证逻辑"""
+        app = App()
+        app.brandName = self.site.settings.site_title
+        app.logo = self.site.settings.site_icon
+
+        # 添加全局请求拦截器，自动添加Authorization头
+        app.requestAdaptor = '''
+            const token = localStorage.getItem('access_token');
+            if (token && api.url.indexOf('/api/') !== -1) {
+                api.headers = api.headers || {};
+                api.headers['Authorization'] = 'Bearer ' + token;
+            }
+            return api;
+        '''
+
+        # 添加响应拦截器，处理401错误
+        app.responseAdaptor = '''
+            if (payload.status === 401) {
+                localStorage.removeItem('access_token');
+                window.location.href = '/admin/login';
+                return payload;
+            }
+            return payload;
+        '''
+
+        # 添加用户信息和登出功能
+        app.header = Tpl(
+            className="w-full",
+            tpl='''<div class="flex justify-between">
+                       <div class="header-left"></div>
+                       <div class="header-right">
+                           <button onclick="logout()" class="btn btn-sm">登出</button>
+                       </div>
+                    </div>
+                    <script>
+                    function logout() {
+                        localStorage.removeItem('access_token');
+                        window.location.href = '/admin/login';
+                    }
+                    </script>''',
+        )
+
+        children = await self.get_page_schema_children(request)
+        app.pages = [{'children': children}] if children else []
+        return app
 
     async def get_page(self, request: Request) -> Page:
         # 引入外部CSS样式

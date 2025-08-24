@@ -35,6 +35,7 @@ def _parse_optional_value(value: Optional[str], value_type: type = str):
 
 @analysis_router.get("/search", response_model=AnalysisSearchResponse)
 async def search_data(
+        current_user: dict = Depends(simple_auth.get_current_user),  # 添加这行
         # 分页参数
         page: int = Query(1, ge=1, description="页码"),
         perPage: int = Query(50, ge=1, le=200, description="每页数量"),

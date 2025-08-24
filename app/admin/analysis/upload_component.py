@@ -56,6 +56,9 @@ class UploadComponent:
             "body": {
                 "type": "form",
                 "encType": "multipart/form-data",
+                "headers": {
+                    "Authorization": "${ls:access_token ? 'Bearer ' + ls:access_token : ''}"
+                },
                 "body": [
                     {
                         "type": "input-file",
