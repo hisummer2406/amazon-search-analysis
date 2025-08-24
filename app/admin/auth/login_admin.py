@@ -1,110 +1,117 @@
-# app/admin/auth/login_admin.py
-"""登录页面管理 - 修复路由问题"""
-from fastapi import Request
-from fastapi_amis_admin.admin import admin
-from fastapi_amis_admin.amis import PageSchema, Page
-from app.admin.admin_site import site
+# login_page.py
+from fastapi import APIRouter
+from fastapi.responses import HTMLResponse
 
+auth_router = APIRouter()
 
-@site.register_admin
-class LoginAdmin(admin.PageAdmin):
-    """登录页面"""
-    page_schema = PageSchema(
-        label="登录",
-        icon="fa fa-sign-in",
-        sort=1000,
-        isDefaultPage=False
-    )
+@auth_router.get("/admin/login")
+async def login_page():
+    """登录页面路由"""
 
-    async def get_page(self, request: Request) -> Page:
-        return Page(
-            title="系统登录",
-            body=[
-                {
-                    "type": "html",
-                    "html": """
-                    <style>
-                        .login-container {
-                            display: flex;
-                            justify-content: center;
-                            align-items: center;
-                            min-height: 80vh;
-                        }
-                        .login-form {
-                            width: 400px;
-                            padding: 40px;
-                            background: white;
-                            border-radius: 8px;
-                            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-                        }
-                    </style>
-                    """
-                },
-                {
-                    "type": "wrapper",
-                    "className": "login-container",
-                    "body": [
-                        {
-                            "type": "form",
-                            "title": "用户登录",
-                            "className": "login-form",
-                            "api": {
-                                "method": "post",
-                                "url": "/api/auth/login",
-                                "adaptor": """
-                                if (payload.status === 0) {
-                                    // 登录成功，保存token并跳转
-                                    localStorage.setItem('access_token', payload.data.access_token);
-                                    setTimeout(function() {
-                                        window.location.href = '/admin/';
-                                    }, 500);
-                                    return {
-                                        status: 0,
-                                        msg: '登录成功，正在跳转...'
-                                    };
-                                } else {
-                                    return {
-                                        status: payload.status,
-                                        msg: payload.msg
-                                    };
-                                }
-                                """
-                            },
-                            "body": [
-                                {
-                                    "type": "html",
-                                    "html": """
-                                             <div style="text-align: center; margin-bottom: 30px;">
-                                                 <img src="/static/amazon_logo.png" alt="Logo" style="height: 60px; margin-bottom: 15px;">
-                                                 <h2 style="color: #495057; margin: 0; font-weight: 600;">亚马逊数据分析系统</h2>
-                                             </div>
-                                             """
-                                },
-                                {
-                                    "type": "input-text",
-                                    "name": "username",
-                                    "label": "用户名",
-                                    "required": True,
-                                    "placeholder": "请输入用户名"
-                                },
-                                {
-                                    "type": "input-password",
-                                    "name": "password",
-                                    "label": "密码",
-                                    "required": True,
-                                    "placeholder": "请输入密码"
-                                }
-                            ],
-                            "actions": [
-                                {
-                                    "type": "submit",
-                                    "label": "登录",
-                                    "level": "primary",
-                                    "size": "lg"
-                                }
-                            ]
-                        }
-                    ]
+    # 简单的登录页面HTML
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>系统登录</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            body { 
+                margin: 0; 
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background-image: url('https://picsum.photos/id/180/1920/1080');
+                background-size: cover;
+                background-position: center;
+                background-attachment: fixed;                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .login-container {
+                background: white;
+                padding: 2rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+                width: 100%;
+                max-width: 400px;
+            }
+            .form-group {
+                margin-bottom: 1rem;
+            }
+            label {
+                display: block;
+                margin-bottom: 0.5rem;
+                font-weight: 500;
+            }
+            input {
+                width: 100%;
+                padding: 0.75rem;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                box-sizing: border-box;
+            }
+            button {
+                width: 100%;
+                padding: 0.75rem;
+                background: #007bff;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                font-size: 16px;
+                cursor: pointer;
+            }
+            button:hover { background: #0056b3; }
+            .header {
+                text-align: center;
+                margin-bottom: 2rem;
+            }
+            .logo {
+                height: 50px;
+                margin-bottom: 1rem;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="login-container">
+            <div class="header">
+                <img src="/static/amazon_logo.png" alt="Logo" class="logo">
+                <h2>亚马逊数据分析系统</h2>
+            </div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">用户名</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit">登录</button>
+            </form>
+        </div>
+        <script>
+            document.getElementById('loginForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: formData.get('username'),
+                        password: formData.get('password')
+                    })
+                });
+                const result = await response.json();
+                if (result.status === 0) {
+                    localStorage.setItem('access_token', result.data.access_token);
+                    window.location.href = '/admin/';
+                } else {
+                    alert(result.msg || '登录失败');
                 }
-            ]
-        )
+            });
+        </script>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)

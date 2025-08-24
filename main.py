@@ -13,8 +13,7 @@ from config import settings
 from database import engine, async_engine
 from app.admin.admin_site import site
 from monitoring import SystemMonitor
-from app.middleware.auth_middleware import AdminAuthMiddleware
-from fastapi.responses import HTMLResponse
+from app.admin.auth.login_admin import auth_router
 
 
 # 配置应用日志，每天自动生成新文件
@@ -118,6 +117,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 挂载登录页面路由
+app.include_router(auth_router)  # 使用新的登录页面路由
+
 # 挂载静态文件目录
 app.mount("/static", StaticFiles(directory="static"), name="static")
 # 注册API路由
@@ -129,7 +131,7 @@ site.mount_app(app)
 
 @app.get("/")
 async def root():
-    return RedirectResponse(url="/admin")
+    return RedirectResponse(url="/admin/login")
 
 @app.get("/health")
 async def health_check():

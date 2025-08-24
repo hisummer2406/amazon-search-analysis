@@ -49,8 +49,8 @@ site.unregister_admin(admin.FileAdmin)
 # 注册模块
 from app.admin.analysis.analysis_admin import AmazonDataQueryAdmin
 from app.admin.user.user_admin import UserManagementAdmin
-from app.admin.auth.login_admin import LoginAdmin
+# from app.admin.auth.login_admin import LoginAdmin
 
+# site.register_admin(LoginAdmin)
 site.register_admin(AmazonDataQueryAdmin)
 site.register_admin(UserManagementAdmin)
-site.register_admin(LoginAdmin)
