@@ -1,4 +1,4 @@
-# app/services/optimized_upload_service.py - 修复版本
+# app/services/optimized_upload_service.py - 保留所有原功能+去重逻辑
 import asyncio
 import logging
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
@@ -16,7 +16,7 @@ from config import settings
 logger = logging.getLogger(__name__)
 
 
-# 独立的工作函数，在文件顶部定义
+# 独立的工作函数，在文件顶部定义 - 保留原逻辑
 def _process_chunk_worker(
         chunk_file: str,
         report_date_str: str,
@@ -43,14 +43,11 @@ def _process_chunk_worker(
         # 创建独立的数据库会话
         with SessionFactory() as db_session:
             for chunk_df in processor.read_csv_chunks(chunk_file):
-                records = processor.convert_chunk_to_records(
-                    chunk_df, report_date, data_type
+                # 使用去重逻辑处理
+                chunk_processed = processor.process_chunk_with_upsert(
+                    chunk_df, report_date, data_type, db_session
                 )
-
-                if records:
-                    db_session.bulk_insert_mappings(AmazonOriginSearchData, records)
-                    db_session.commit()
-                    processed_count += len(records)
+                processed_count += chunk_processed
 
         # 清理分片文件
         if os.path.exists(chunk_file):
@@ -81,7 +78,7 @@ def _process_chunk_worker(
 
 
 class OptimizedUploadService(UploadService):
-    """优化版上传服务 - 继承原有功能并添加多核处理"""
+    """优化版上传服务 - 继承原有功能并添加多核处理+去重逻辑"""
 
     def __init__(self, db: Session):
         super().__init__(db)
@@ -95,7 +92,7 @@ class OptimizedUploadService(UploadService):
             original_filename: str,
             data_type: str
     ) -> Tuple[bool, str, Optional[ImportBatchRecords]]:
-        """智能选择处理策略"""
+        """智能选择处理策略 - 保留原逻辑"""
         try:
             file_size = os.path.getsize(file_path)
             file_size_mb = file_size / (1024 * 1024)
@@ -114,8 +111,8 @@ class OptimizedUploadService(UploadService):
                     file_path, original_filename, data_type
                 )
             else:
-                # 小文件：使用原有单线程处理
-                return await super().process_csv_file(
+                # 小文件：使用去重版单线程处理
+                return await self._process_with_upsert_single_thread(
                     file_path, original_filename, data_type
                 )
 
@@ -123,13 +120,75 @@ class OptimizedUploadService(UploadService):
             logger.error(f"优化处理失败: {e}")
             return False, str(e), None
 
+    async def _process_with_upsert_single_thread(
+        self,
+        file_path: str,
+        original_filename: str,
+        data_type: str
+    ) -> Tuple[bool, str, Optional[ImportBatchRecords]]:
+        """单线程去重处理 - 小文件使用"""
+        batch_record = None
+        try:
+            # 验证和初始化
+            is_valid, validation_message = self.file_validator.validate_csv_structure(file_path)
+            if not is_valid:
+                return False, validation_message, None
+
+            report_date = self._extract_date_from_filename(original_filename)
+            if not report_date:
+                return False, "无法解析文件日期", None
+
+            file_info = self.csv_processor.get_file_info(file_path)
+            batch_record = self._create_batch_record(
+                original_filename, report_date, file_info['estimated_records'],
+                data_type == 'daily', data_type == 'weekly'
+            )
+
+            logger.info("开始单线程去重处理")
+            processed_count = 0
+            start_time = datetime.now()
+
+            # 分块处理
+            for chunk_df in self.csv_processor.read_csv_chunks(file_path):
+                chunk_processed = self.csv_processor.process_chunk_with_upsert(
+                    chunk_df, report_date, data_type, self.db
+                )
+                processed_count += chunk_processed
+
+                # 实时更新进度
+                current_time = datetime.now()
+                processing_seconds = int((current_time - start_time).total_seconds())
+                batch_record.processed_keywords = processed_count
+                batch_record.processing_seconds = processing_seconds
+
+            # 完成处理
+            final_time = datetime.now()
+            final_processing_seconds = int((final_time - start_time).total_seconds())
+
+            batch_record.status = StatusEnum.COMPLETED
+            batch_record.processed_keywords = processed_count
+            batch_record.total_records = processed_count
+            batch_record.processing_seconds = final_processing_seconds
+            batch_record.completed_at = final_time
+            self.db.commit()
+
+            message = f"单线程去重处理完成，总记录数: {processed_count}"
+            logger.info(f"{message}, 耗时: {final_processing_seconds}秒")
+            return True, message, batch_record
+
+        except Exception as e:
+            logger.error(f"单线程去重处理异常: {e}")
+            if batch_record:
+                self._update_batch_record_error(batch_record, str(e))
+            return False, str(e), batch_record
+
     async def _process_with_multiprocessing(
             self,
             file_path: str,
             original_filename: str,
             data_type: str
     ) -> Tuple[bool, str, Optional[ImportBatchRecords]]:
-        """多进程处理大文件 - 修复版本"""
+        """多进程处理大文件 - 保留原逻辑"""
         batch_record = None
         start_time = datetime.now()
 
@@ -156,16 +215,16 @@ class OptimizedUploadService(UploadService):
             # 4. 文件分片
             chunk_files = await self._create_file_chunks(file_path, num_chunks=self.max_workers)
 
-            # 5. 并行处理分片 - 不传递数据库连接
+            # 5. 并行处理分片 - 使用去重逻辑
             loop = asyncio.get_event_loop()
             with ProcessPoolExecutor(max_workers=self.max_workers) as executor:
                 tasks = []
                 for i, chunk_file in enumerate(chunk_files):
                     task = loop.run_in_executor(
                         executor,
-                        _process_chunk_worker,  # 改为独立函数
+                        _process_chunk_worker,
                         chunk_file,
-                        str(report_date),  # 转为字符串传递
+                        str(report_date),
                         data_type,
                         i
                     )
@@ -197,7 +256,7 @@ class OptimizedUploadService(UploadService):
                 batch_record.status = StatusEnum.COMPLETED
                 batch_record.processed_keywords = total_processed
                 batch_record.total_records = total_processed
-                message = f"多进程处理完成，总记录数: {total_processed}"
+                message = f"多进程去重处理完成，总记录数: {total_processed}"
                 success = True
             else:
                 batch_record.status = StatusEnum.FAILED
@@ -227,7 +286,7 @@ class OptimizedUploadService(UploadService):
             original_filename: str,
             data_type: str
     ) -> Tuple[bool, str, Optional[ImportBatchRecords]]:
-        """多线程处理中等大小文件"""
+        """多线程处理中等大小文件 - 使用去重逻辑"""
         batch_record = None
         start_time = datetime.now()
 
@@ -247,22 +306,20 @@ class OptimizedUploadService(UploadService):
                 data_type == 'daily', data_type == 'weekly'
             )
 
-            logger.info("开始多线程管道处理")
+            logger.info("开始多线程去重管道处理")
 
             # 创建数据队列
-            data_queue = asyncio.Queue(maxsize=50)
+            data_queue = asyncio.Queue(maxsize=20)
 
             # 创建任务
             reader_task = asyncio.create_task(
                 self._data_reader_coroutine(file_path, report_date, data_type, data_queue)
             )
 
-            writer_tasks = [
-                asyncio.create_task(
-                    self._data_writer_coroutine(f"writer_{i}", data_queue, batch_record, start_time)
-                )
-                for i in range(2)  # 2个写入协程
-            ]
+            # 使用1个写入协程避免数据库冲突
+            writer_task = asyncio.create_task(
+                self._data_writer_with_upsert(data_queue, batch_record, start_time, report_date, data_type)
+            )
 
             # 监控任务进度
             monitor_task = asyncio.create_task(
@@ -273,17 +330,16 @@ class OptimizedUploadService(UploadService):
             await reader_task
 
             # 发送停止信号
-            for _ in writer_tasks:
-                await data_queue.put(None)
+            await data_queue.put(None)
 
             # 等待写入完成
-            results = await asyncio.gather(*writer_tasks)
+            result = await writer_task
 
             # 停止监控
             monitor_task.cancel()
 
             # 统计结果
-            total_processed = sum(r['processed_count'] for r in results)
+            total_processed = result['processed_count']
             final_processing_seconds = int((datetime.now() - start_time).total_seconds())
 
             batch_record.status = StatusEnum.COMPLETED
@@ -293,8 +349,8 @@ class OptimizedUploadService(UploadService):
             batch_record.completed_at = datetime.now()
             self.db.commit()
 
-            logger.info(f"多线程处理完成，总记录数: {total_processed}, 总耗时: {final_processing_seconds}秒")
-            return True, f"多线程处理完成，总记录数: {total_processed}", batch_record
+            logger.info(f"多线程去重处理完成，总记录数: {total_processed}, 总耗时: {final_processing_seconds}秒")
+            return True, f"多线程去重处理完成，总记录数: {total_processed}", batch_record
 
         except Exception as e:
             logger.error(f"多线程处理异常: {e}")
@@ -302,6 +358,49 @@ class OptimizedUploadService(UploadService):
                 self._update_batch_record_error(batch_record, str(e))
             return False, str(e), batch_record
 
+    async def _data_writer_with_upsert(
+        self,
+        data_queue: asyncio.Queue,
+        batch_record: ImportBatchRecords,
+        start_time: datetime,
+        report_date: date,
+        data_type: str
+    ) -> Dict[str, Any]:
+        """去重更新数据写入协程"""
+        processed_count = 0
+        writer_start_time = datetime.now()
+
+        try:
+            while True:
+                data = await data_queue.get()
+
+                if data is None:  # 停止信号
+                    break
+
+                if isinstance(data, dict) and 'error' in data:
+                    logger.error(f"写入协程收到错误: {data['error']}")
+                    break
+
+                # 使用去重更新逻辑处理数据
+                chunk_processed = self.csv_processor.process_chunk_with_upsert(
+                    data, report_date, data_type, self.db
+                )
+
+                processed_count += chunk_processed
+                logger.debug(f"去重写入 {chunk_processed} 条记录")
+                data_queue.task_done()
+
+        except Exception as e:
+            logger.error(f"去重写入协程失败: {e}")
+
+        processing_time = (datetime.now() - writer_start_time).total_seconds()
+
+        return {
+            'processed_count': processed_count,
+            'processing_time': processing_time
+        }
+
+    # 保留所有原有的辅助方法
     async def _monitor_progress(self, batch_record: ImportBatchRecords, start_time: datetime):
         """监控处理进度"""
         try:
@@ -326,75 +425,20 @@ class OptimizedUploadService(UploadService):
             data_type: str,
             data_queue: asyncio.Queue
     ):
-        """数据读取协程"""
-        processor = CSVProcessor(batch_size=5000)
-        loop = asyncio.get_event_loop()
-
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            try:
-                for chunk_df in processor.read_csv_chunks(file_path):
-                    # 在线程中转换数据
-                    records = await loop.run_in_executor(
-                        executor,
-                        processor.convert_chunk_to_records,
-                        chunk_df,
-                        report_date,
-                        data_type
-                    )
-
-                    if records:
-                        await data_queue.put(records)
-                        logger.debug(f"读取并转换 {len(records)} 条记录")
-
-            except Exception as e:
-                logger.error(f"数据读取协程失败: {e}")
-                await data_queue.put({'error': str(e)})
-
-    async def _data_writer_coroutine(
-            self,
-            writer_name: str,
-            data_queue: asyncio.Queue,
-            batch_record: ImportBatchRecords,
-            start_time: datetime
-    ) -> Dict[str, Any]:
-        """数据写入协程"""
-        from app.models.analysis_schemas import AmazonOriginSearchData
-
-        processed_count = 0
-        writer_start_time = datetime.now()
+        """数据读取协程 - 直接传递DataFrame"""
+        processor = CSVProcessor(batch_size=3000)
 
         try:
-            while True:
-                data = await data_queue.get()
-
-                if data is None:  # 停止信号
-                    break
-
-                if isinstance(data, dict) and 'error' in data:
-                    logger.error(f"{writer_name} 收到错误: {data['error']}")
-                    break
-
-                # 写入数据库
-                self.db.bulk_insert_mappings(AmazonOriginSearchData, data)
-                self.db.commit()
-                processed_count += len(data)
-
-                logger.debug(f"{writer_name} 写入 {len(data)} 条记录")
-                data_queue.task_done()
+            for chunk_df in processor.read_csv_chunks(file_path):
+                await data_queue.put(chunk_df)
+                logger.debug(f"读取数据块 {len(chunk_df)} 条记录")
 
         except Exception as e:
-            logger.error(f"{writer_name} 失败: {e}")
-
-        processing_time = (datetime.now() - writer_start_time).total_seconds()
-
-        return {
-            'writer_name': writer_name,
-            'processed_count': processed_count,
-            'processing_time': processing_time
-        }
+            logger.error(f"数据读取协程失败: {e}")
+            await data_queue.put({'error': str(e)})
 
     async def _create_file_chunks(self, file_path: str, num_chunks: int = 4) -> List[str]:
-        """将文件分割成指定数量的块"""
+        """将文件分割成指定数量的块 - 保留原逻辑"""
         file_size = os.path.getsize(file_path)
         chunk_size = file_size // num_chunks
         chunk_files = []
@@ -444,7 +488,7 @@ class OptimizedUploadService(UploadService):
         return chunk_files
 
     async def _cleanup_chunk_files(self, chunk_files: List[str]):
-        """清理分片文件"""
+        """清理分片文件 - 保留原逻辑"""
         for chunk_file in chunk_files:
             try:
                 if os.path.exists(chunk_file):
