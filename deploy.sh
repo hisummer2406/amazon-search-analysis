@@ -20,6 +20,9 @@ fi
 # 2. 清理旧容器
 echo "2️⃣ 清理旧容器..."
 docker-compose down --remove-orphans || true
+# 2. 清理旧容器
+echo "2️⃣ 清理旧容器..."
+docker-compose down --remove-orphans || true
 
 # 3. 创建必要目录
 echo "3️⃣ 创建目录..."
@@ -45,19 +48,19 @@ echo "7️⃣ 等待服务启动..."
 sleep 10
 
 # 8. 健康检查
-echo "8️⃣ 健康检查..."
-for i in {1..30}; do
-    if curl -f http://localhost:8000/health > /dev/null 2>&1; then
-        echo "✅ 服务启动成功！"
-        echo "📱 访问地址: http://localhost:8000"
-        echo "👤 默认账号: admin / admin"
-        docker-compose ps
-        exit 0
-    fi
-    echo "等待服务启动... ($i/30)"
-    sleep 2
-done
+#echo "8️⃣ 健康检查..."
+#for i in {1..30}; do
+#    if curl -f http://localhost:8000/health > /dev/null 2>&1; then
+#        echo "✅ 服务启动成功！"
+#        echo "📱 访问地址: http://localhost:8000"
+#        echo "👤 默认账号: admin / admin"
+#        docker-compose ps
+#        exit 0
+#    fi
+#    echo "等待服务启动... ($i/30)"
+#    sleep 2
+#done
 
-echo "❌ 服务启动超时，请检查日志:"
+#echo "❌ 服务启动超时，请检查日志:"
 docker-compose logs app
 exit 1

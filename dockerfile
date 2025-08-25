@@ -1,11 +1,18 @@
 # Dockerfile
-FROM python:3.11-slim
+FROM registry.cn-beijing.aliyuncs.com/ruanjinggang/python:3.10-slim
+
+RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/
 
 # 设置系统依赖
+RUN echo "deb http://mirrors.aliyun.com/debian bookworm main non-free non-free-firmware\n\
+deb http://mirrors.aliyun.com/debian bookworm-updates main non-free non-free-firmware\n\
+deb http://mirrors.aliyun.com/debian-security bookworm-security main non-free non-free-firmware" > /etc/apt/sources.list
+
 RUN apt-get update && apt-get install -y \
     postgresql-client \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
+
 
 WORKDIR /app
 
