@@ -1,20 +1,33 @@
 /* ===== 管理后台公共样式 ===== */
 
-/* 关键词列文字超出隐藏 - 简洁版本 */
+/* 关键词列文字换行显示 - 修改版本 */
 .cell-keyword {
-    width: 60px !important;
-    max-width: 60px !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
+    width: 100px !important;
+    max-width: 100px !important;
+    word-wrap: break-word !important;
+    white-space: normal !important;
+    line-height: 1.3 !important;
+    padding: 8px !important;
 }
 
 .cell-keyword a {
     width: 100% !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
+    word-wrap: break-word !important;
+    white-space: normal !important;
     display: block !important;
+    line-height: 1.3 !important;
+}
+
+/* 表格行高自动调整 */
+.analysis-table .cxd-Table-tbody tr {
+    height: auto !important;
+    min-height: 40px;
+}
+
+.analysis-table .cxd-Table-tbody td {
+    vertical-align: top !important;
+    padding: 8px !important;
+    line-height: 1.4;
 }
 
 /* 关键词链接访问后颜色 */

@@ -115,7 +115,7 @@ class TableComponent:
                 "type": "tpl",
                 "width": 80,
                 "searchable": True,
-                "className": "text-center cell-keyword",
+                "className": "text-left cell-keyword",
                 "labelClassName": "text-center vertical-middle font-size-14",
                 "tpl": "<a href='https://www.amazon.com/s?k=${keyword | url_encode}' target='_blank' class='keyword-link' title='${keyword}'>${keyword}</a>",
             },
