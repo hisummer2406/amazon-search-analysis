@@ -3,7 +3,7 @@ version: '3.8'
 
 services:
   app:
-    image: v4 
+    image: v4
     ports:
       - "8000:8000"
     volumes:
@@ -19,7 +19,7 @@ services:
         reservations:
           cpus: '2.0'
           memory: 4G
-
+          
   db:
     image: registry.cn-beijing.aliyuncs.com/ruanjinggang/postgres:alpine
     environment:

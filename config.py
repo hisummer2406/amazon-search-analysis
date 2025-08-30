@@ -1,6 +1,4 @@
 from pydantic_settings import BaseSettings
-import os
-
 
 class Settings(BaseSettings):
     # 应用配置
@@ -52,4 +50,3 @@ class Settings(BaseSettings):
 
 # 创建设置实例
 settings = Settings()
-

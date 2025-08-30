@@ -20,6 +20,9 @@ fi
 # 2. 清理旧容器
 echo "2️⃣ 清理旧容器..."
 docker-compose down --remove-orphans || true
+# 2. 清理旧容器
+echo "2️⃣ 清理旧容器..."
+docker-compose down --remove-orphans || true
 
 # 3. 创建必要目录
 echo "3️⃣ 创建目录..."

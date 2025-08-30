@@ -104,90 +104,55 @@ class TableComponent:
     def _get_table_columns() -> list:
         """获取表格列配置 - 统一表头字体，优化单元格显示"""
         return [
-
-            # 关键词列 - 添加超链接和悬浮提示，不换行
+            # 关键词列 - 缩小宽度
             {
                 "name": "keyword",
                 "label": "关键词",
                 "type": "tpl",
-                "width": 150,
+                "width": 80,
                 "searchable": True,
-                "className": "text-nowrap cell-wide",
-                "style": {
-                    "fontSize": "14px",
-                    "whiteSpace": "nowrap",
-                    "overflow": "hidden",
-                    "textOverflow": "ellipsis",
-                    "textAlign": "left",
-                    "verticalAlign": "middle"
-                },
+                "className": "text-center cell-keyword",
                 "labelClassName": "text-center vertical-middle font-size-14",
-                "tpl": "<a href='https://www.amazon.com/s?k=${keyword | url_encode}' target='_blank' class='keyword-link text-nowrap' title='${keyword}'>${keyword}</a>",
+                "tpl": "<a href='https://www.amazon.com/s?k=${keyword | url_encode}' target='_blank' class='keyword-link' title='${keyword}'>${keyword}</a>",
             },
 
-            # 日排名
+            # 排名列 - 保持紧凑
             {
                 "name": "current_rangking_day",
                 "label": "日排名",
                 "type": "text",
-                "width": 30,
+                "width": 50,
                 "sortable": True,
-                "className": "text-center cell-narrow",
-                "style": {
-                    "fontSize": "14px",
-                    "textAlign": "center",
-                    "verticalAlign": "middle"
-                },
+                "className": "text-center",
                 "labelClassName": "text-center vertical-middle font-size-14"
             },
-
-            # 日变化
             {
                 "name": "ranking_change_day",
                 "label": "日变化",
                 "type": "tpl",
                 "tpl": "<span class='${ranking_change_day > 0 ? \"change-positive\" : ranking_change_day < 0 ? \"change-negative\" : \"change-neutral\"}'>${ranking_change_day > 0 ? \"+\" + ranking_change_day : ranking_change_day}</span>",
-                "width": 30,
+                "width": 50,
                 "sortable": True,
-                "className": "text-center cell-narrow",
-                "style": {
-                    "fontSize": "14px",
-                    "textAlign": "center",
-                    "verticalAlign": "middle"
-                },
+                "className": "text-center",
                 "labelClassName": "text-center vertical-middle font-size-14"
             },
-
-            # 周排名
             {
                 "name": "current_rangking_week",
                 "label": "周排名",
                 "type": "text",
-                "width": 30,
+                "width": 50,
                 "sortable": True,
-                "className": "text-center cell-narrow",
-                "style": {
-                    "fontSize": "14px",
-                    "textAlign": "center",
-                    "verticalAlign": "middle"
-                },
+                "className": "text-center",
                 "labelClassName": "text-center vertical-middle font-size-14"
             },
-
-            # 周变化
             {
                 "name": "ranking_change_week",
                 "label": "周变化",
                 "type": "tpl",
                 "tpl": "<span class='${ranking_change_week > 0 ? \"change-positive\" : ranking_change_week < 0 ? \"change-negative\" : \"change-neutral\"}'>${ranking_change_week > 0 ? \"+\" + ranking_change_week : ranking_change_week}</span>",
-                "width": 30,
+                "width": 50,
                 "sortable": True,
-                "className": "text-center cell-narrow",
-                "style": {
-                    "fontSize": "14px",
-                    "textAlign": "center",
-                    "verticalAlign": "middle"
-                },
+                "className": "text-center",
                 "labelClassName": "text-center vertical-middle font-size-14"
             },
 
@@ -196,7 +161,7 @@ class TableComponent:
                 "name": "ranking_trend_day",
                 "label": "排名趋势",
                 "type": "chart",
-                "width": 500,
+                "width": 300,
                 "sortable": False,
                 "className": "text-center chart-cell",
                 "labelClassName": "text-center vertical-middle font-size-14",
@@ -231,96 +196,50 @@ class TableComponent:
                     ]
                 }
             },
-
-            # 品牌
-            {
-                "name": "top_brand",
-                "label": "品牌",
-                "type": "text",
-                "width": 100,
-                "searchable": True,
-                "className": "text-nowrap cell-fixed-width",
-                "style": {
-                    "fontSize": "14px",
-                    "whiteSpace": "nowrap",
-                    "textAlign": "left",
-                    "verticalAlign": "middle"
-                },
-                "labelClassName": "text-center vertical-middle font-size-14"
-            },
-
-            # 类目
             {
                 "name": "top_category",
                 "label": "类目",
                 "type": "text",
-                "width": 100,
+                "width": 50,  # 从100减少到80
                 "searchable": True,
-                "className": "text-nowrap cell-wide",
-                "style": {
-                    "fontSize": "14px",
-                    "whiteSpace": "nowrap",
-                    "overflow": "hidden",
-                    "textOverflow": "ellipsis",
-                    "textAlign": "left",
-                    "verticalAlign": "middle"
-                },
+                "className": "text-nowrap",
                 "labelClassName": "text-center vertical-middle font-size-14",
             },
 
-            # ASIN - 显示编码，点击跳转，增加表头搜索
+            # ASIN - 缩小宽度
             {
                 "name": "top_product_asin",
                 "label": "ASIN",
                 "type": "tpl",
-                "width": 100,
+                "width": 50,  # 从100减少到80
                 "searchable": True,
-                "className": "cell-fixed-width",
-                "style": {
-                    "fontSize": "14px",
-                    "textAlign": "center",
-                    "verticalAlign": "middle"
-                },
+                "className": "text-center",
                 "labelClassName": "text-center vertical-middle font-size-14",
                 "tpl": "<a href='https://www.amazon.com/dp/${top_product_asin}' target='_blank' class='asin-link' title='查看商品详情'>${top_product_asin}</a>"
             },
 
-            # 商品标题
+            # 商品标题 - 大幅缩小，使用省略号
             {
                 "name": "top_product_title",
                 "label": "商品标题",
                 "type": "text",
-                "width": 300,
+                "width": 100,
                 "searchable": True,
-                "className": "text-normal cell-wide",
-                "style": {
-                    "fontSize": "14px",
-                    "whiteSpace": "normal",
-                    "wordBreak": "break-word",
-                    "textAlign": "left",
-                    "verticalAlign": "middle"
-                },
+                "className": "cell-title-ellipsis",
                 "labelClassName": "text-center vertical-middle font-size-14",
             },
 
-            # 点击份额
+            # 数据指标列 - 缩小宽度
             {
                 "name": "top_product_click_share",
                 "label": "点击份额",
                 "type": "tpl",
                 "tpl": "<span>${top_product_click_share}%</span>",
-                "width": 50,
+                "width": 50,  # 从80减少到70
                 "sortable": True,
-                "className": "text-center cell-narrow",
-                "style": {
-                    "fontSize": "14px",
-                    "textAlign": "center",
-                    "verticalAlign": "middle"
-                },
+                "className": "text-center",
                 "labelClassName": "text-center vertical-middle font-size-14"
             },
-
-            # 转化份额
             {
                 "name": "top_product_conversion_share",
                 "label": "转化份额",
@@ -328,16 +247,9 @@ class TableComponent:
                 "tpl": "<span>${top_product_conversion_share}%</span>",
                 "width": 50,
                 "sortable": True,
-                "className": "text-center cell-narrow",
-                "style": {
-                    "fontSize": "14px",
-                    "textAlign": "center",
-                    "verticalAlign": "middle"
-                },
+                "className": "text-center",
                 "labelClassName": "text-center vertical-middle font-size-14"
             },
-
-            # 转化率
             {
                 "name": "conversion_rate",
                 "label": "转化率",
@@ -345,61 +257,39 @@ class TableComponent:
                 "tpl": "<span class='${conversion_rate >= 5 ? \"conversion-high\" : conversion_rate >= 2 ? \"conversion-medium\" : \"conversion-low\"}'>${conversion_rate}%</span>",
                 "width": 50,
                 "sortable": True,
-                "className": "text-center cell-narrow",
-                "style": {
-                    "fontSize": "14px",
-                    "textAlign": "center",
-                    "verticalAlign": "middle"
-                },
+                "className": "text-center",
                 "labelClassName": "text-center vertical-middle font-size-14"
             },
 
-            # 日新品
+            # 状态列 - 缩小宽度
             {
                 "name": "is_new_day",
                 "label": "日新品",
                 "type": "tpl",
-                "width": 30,
-                "className": "text-center cell-narrow",
-                "style": {
-                    "fontSize": "14px",
-                    "textAlign": "center",
-                    "verticalAlign": "middle"
-                },
+                "width": 30,  # 从60减少到50
+                "className": "text-center",
                 "labelClassName": "text-center vertical-middle font-size-14",
                 "tpl": "<span class='${is_new_day ? \"status-new-day\" : \"status-normal\"}'>${is_new_day ? \"是\" : \"否\"}</span>"
             },
-
-            # 周新品
             {
                 "name": "is_new_week",
                 "label": "周新品",
                 "type": "tpl",
                 "width": 30,
-                "className": "text-center cell-narrow",
-                "style": {
-                    "fontSize": "14px",
-                    "textAlign": "center",
-                    "verticalAlign": "middle"
-                },
+                "className": "text-center",
                 "labelClassName": "text-center vertical-middle font-size-14",
                 "tpl": "<span class='${is_new_week ? \"status-new-week\" : \"status-normal\"}'>${is_new_week ? \"是\" : \"否\"}</span>"
             },
 
-            # 时间信息列'
+            # 日期列 - 缩小宽度
             {
                 "name": "report_date_day",
                 "label": "报告日期",
                 "type": "datetime",
-                "width": 100,
+                "width": 100,  # 从100减少到90
                 "format": "YYYY-MM-DD",
                 "sortable": True,
-                "className": "cell-fixed-width",
-                "style": {
-                    "fontSize": "14px",
-                    "textAlign": "center",
-                    "verticalAlign": "middle"
-                },
+                "className": "text-center",
                 "labelClassName": "text-center vertical-middle font-size-14"
             }
         ]
