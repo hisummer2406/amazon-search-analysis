@@ -56,7 +56,6 @@ async def lifespan(app: FastAPI):
     logger.info(f"📊 数据库Schema: {settings.DATABASE_SCHEMA}")
     logger.info(f"📁 上传目录: {settings.UPLOAD_DIR}")
     logger.info(f"⚙️ 批处理大小: {settings.BATCH_SIZE}")
-    logger.info(f"🔍 查询天数限制: {settings.QUERY_DAYS_LIMIT}")
 
     # 初始化上传目录
     init_upload_dir()
