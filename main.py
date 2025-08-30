@@ -16,6 +16,7 @@ from monitoring import SystemMonitor
 from app.admin.auth.login_admin import auth_router
 from app.middleware.auth_middleware import AdminAuthMiddleware
 
+
 # 配置应用日志，每天自动生成新文件
 def configure_logging():
     import logging.handlers
@@ -47,6 +48,7 @@ def init_upload_dir():
         logger.info("✅ 上传目录初始化成功")
     except Exception as e:
         logger.error(f"❌ 上传目录初始化失败: {e}")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -130,9 +132,11 @@ app.include_router(api_router)
 # 挂载后台管理系统
 site.mount_app(app)
 
+
 @app.get("/")
 async def root():
     return RedirectResponse(url="/admin/login")
+
 
 @app.get("/health")
 async def health_check():
@@ -176,5 +180,6 @@ if __name__ == "__main__":
         "main:app",
         host="0.0.0.0",
         port=8000,
+        timeout_keep_alive=600,
         reload=settings.DEBUG,
     )

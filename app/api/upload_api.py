@@ -230,7 +230,7 @@ async def upload_csv_file(
             "data": None
         }
     except Exception as e:
-        logger.error(f"上传文件失败: {e}")
+        logger.error(f"上传文件失败: {e}",exc_info=True)
         return {
             "status": 1,
             "msg": f"文件上传失败: {str(e)}",
