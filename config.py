@@ -33,8 +33,8 @@ class Settings(BaseSettings):
     MULTITHREADING_THRESHOLD_MB: float = 100.0  # 使用多线程的文件大小阈值(MB)
 
     # 数据库连接优化配置
-    DB_POOL_SIZE: int = 10  # 连接池大小
-    DB_MAX_OVERFLOW: int = 15  # 最大溢出连接
+    DB_POOL_SIZE: int = 50  # 连接池大小
+    DB_MAX_OVERFLOW: int = 60  # 最大溢出连接
     DB_POOL_TIMEOUT: int = 1800  # 连接超时时间（秒）
     DB_POOL_RECYCLE: int = 7200  # 连接回收时间（2小时）
 
