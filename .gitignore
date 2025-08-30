@@ -5,6 +5,7 @@
 logs/*
 # 忽略所有__pycache__目录
 __pycache__/
+uploads/
 
 # 忽略Python字节码文件（.pyc/.pyo/.pyd）
 *.py[cod]
