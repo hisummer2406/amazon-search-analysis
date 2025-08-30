@@ -158,7 +158,7 @@ async def upload_csv_file(
         background_tasks: BackgroundTasks,
         file: UploadFile = File(..., description="上传的CSV文件"),
         data_type: Optional[str] = Form(None, description="数据类型: daily 或 weekly"),
-        db: Session = Depends(get_db)  # 仅用于验证和初始响应
+        # db: Session = Depends(get_db)  # 仅用于验证和初始响应
 ) -> Dict[str, Any]:
     try:
         logger.info(f"接收到文件上传请求: {file.filename if file else 'No file'}, data_type: {data_type}")
