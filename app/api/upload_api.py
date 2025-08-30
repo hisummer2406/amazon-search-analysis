@@ -26,8 +26,8 @@ async def save_upload_file(upload_file: UploadFile, file_path: str) -> bool:
         Path(file_path).parent.mkdir(parents=True, exist_ok=True)
 
         async with aiofiles.open(file_path, 'wb') as f:
-            content = await upload_file.read()
-            await f.write(content)
+            while chunk := await upload_file.read(8192):  # 8KB小块
+                await f.write(chunk)
 
         logger.info(f"文件保存成功: {file_path}")
         return True
