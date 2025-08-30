@@ -205,7 +205,7 @@ async def upload_csv_file(
 
         # 添加后台任务处理CSV - 使用独立数据库会话
         background_tasks.add_task(
-            process_csv_background_optimized_sync,  # 使用同步版本
+            process_csv_background_optimized_sync,
             str(file_path),
             file.filename,
             actual_data_type
