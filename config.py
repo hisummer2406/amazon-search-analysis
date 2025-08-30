@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     MAX_FILE_SIZE: int = 3 * 1024 * 1024 * 1024  # 3GB for large files
 
     # 批处理配置
-    BATCH_SIZE: int = 5000
+    BATCH_SIZE: int = 1000
 
     # Admin配置密钥：
     # python -c "import secrets; print(secrets.token_urlsafe(32))"
