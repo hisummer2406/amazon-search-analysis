@@ -3,7 +3,7 @@ version: '3.8'
 
 services:
   app:
-    image: amazon:v1
+    image: v4
     ports:
       - "8000:8000"
     volumes:
@@ -21,7 +21,7 @@ services:
           memory: 4G
           
   db:
-    image: registry.cn-beijing.aliyuncs.com/ruanjinggang/postgres:15
+    image: registry.cn-beijing.aliyuncs.com/ruanjinggang/postgres:alpine
     environment:
       POSTGRES_DB: amazon_search
       POSTGRES_USER: postgres
@@ -31,7 +31,6 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./docs/analysis.sql:/docker-entrypoint-initdb.d/init.sql
       - ./etc/postgresql.conf:/etc/postgresql.conf
     command: postgres -c config_file=/etc/postgresql.conf
     deploy:

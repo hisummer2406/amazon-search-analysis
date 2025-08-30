@@ -1,6 +1,4 @@
 from pydantic_settings import BaseSettings
-import os
-
 
 class Settings(BaseSettings):
     # 应用配置
@@ -47,11 +45,8 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+        extra = "ignore"
 
 
 # 创建设置实例
 settings = Settings()
-
-if __name__ == "__main__":
-    print(os.getcwd())
-    print(os.listdir())
