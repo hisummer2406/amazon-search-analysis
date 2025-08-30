@@ -9,6 +9,10 @@ class AnalysisSearchRequest(BaseModel):
     page: int = Field(default=1, ge=1, description="页码")
     perPage: int = Field(default=50, ge=1, le=200, description="每页数量")
 
+    # 搜索条件
+    orderBy: Optional[str] = Field(None, description="排序字段")
+    orderDir: Optional[str] = Field(None, description="排序规则")
+
     # 基础搜索条件
     keyword: Optional[str] = Field(None, description="关键词搜索")
     brand: Optional[str] = Field(None, description="品牌搜索")

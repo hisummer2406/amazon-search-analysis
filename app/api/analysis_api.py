@@ -40,6 +40,10 @@ async def search_data(
         page: int = Query(1, ge=1, description="页码"),
         perPage: int = Query(50, ge=1, le=200, description="每页数量"),
 
+        # 排序字段
+        orderBy: Optional[str] = Query(None, description="当前搜索频率排名日"),
+        orderDir: Optional[str] = Query(None, description="升序"),
+
         # 基础搜索条件参数
         keyword: Optional[str] = Query(None, description="关键词搜索"),
         brand: Optional[str] = Query(None, description="品牌搜索"),
@@ -83,6 +87,10 @@ async def search_data(
             # 分页参数
             page=page,
             perPage=perPage,
+
+            # 排序参数
+            orderBy=_parse_optional_value(orderBy),
+            orderDir=_parse_optional_value(orderDir),
 
             # 基础搜索条件
             keyword=_parse_optional_value(keyword),

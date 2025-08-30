@@ -29,9 +29,13 @@ class AnalysisCRUD:
             total_count = query.count()
 
             # 应用排序和分页
-            items = query.order_by(asc(AmazonOriginSearchData.current_rangking_day)).offset(skip).limit(params.perPage).all()
+            if params.orderBy:
+                if params.orderDir == "desc":
+                    query = query.order_by(desc(getattr(AmazonOriginSearchData, params.orderBy)))
+                else:
+                    query = query.order_by(asc(getattr(AmazonOriginSearchData, params.orderBy)))
 
-            return items, total_count
+            return query.offset(skip).limit(params.perPage).all(), total_count
 
         except Exception as e:
             logger.error(f"分页搜索数据失败: {e}")

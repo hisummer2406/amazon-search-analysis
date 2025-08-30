@@ -20,6 +20,10 @@ class TableComponent:
                     "page": "${page || 1}",
                     "perPage": "${perPage || 100}",
 
+                    # 添加排序参数
+                    "orderBy": "${orderBy}",
+                    "orderDir": "${orderDir}",
+
                     # 基础搜索条件参数
                     "keyword": "${keyword}",
                     "brand": "${brand}",
@@ -256,7 +260,6 @@ class TableComponent:
                 "type": "tpl",
                 "tpl": "<span class='${conversion_rate >= 5 ? \"conversion-high\" : conversion_rate >= 2 ? \"conversion-medium\" : \"conversion-low\"}'>${conversion_rate}%</span>",
                 "width": 50,
-                "sortable": True,
                 "className": "text-center",
                 "labelClassName": "text-center vertical-middle font-size-14"
             },
