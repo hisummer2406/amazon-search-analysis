@@ -279,14 +279,21 @@ async def test_upload_file(
 
 
 @upload_router.get("/processing-status")
-async def get_processing_status():
+async def get_processing_status(data_type: str = None):
     with SessionFactory() as db:
         try:
             from app.models.import_schemas import ImportBatchRecords, StatusEnum
             from datetime import datetime
             from sqlalchemy import desc
 
-            records = db.query(ImportBatchRecords).order_by(desc(ImportBatchRecords.created_at)).limit(5).all()
+            query = db.query(ImportBatchRecords)
+
+            if data_type == 'daily':
+                query = query.filter(ImportBatchRecords.is_day_data == True)
+            if data_type == 'weekly':
+                query = query.filter(ImportBatchRecords.is_week_data == True)
+
+            records = query.order_by(desc(ImportBatchRecords.created_at)).limit(5).all()
 
             items = []
             for r in records:
@@ -326,6 +333,7 @@ async def get_processing_status():
         except Exception as e:
             logger.error(f"获取处理状态失败: {e}")
             return {"status": 1, "msg": str(e), "data": {"items": []}}
+
 
 def _get_status_display(status: 'StatusEnum') -> str:
     """获取状态显示文本"""

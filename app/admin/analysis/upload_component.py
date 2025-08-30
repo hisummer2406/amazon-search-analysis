@@ -89,7 +89,7 @@ class UploadComponent:
                     {
                         "type": "service",
                         "name": "processing_status",
-                        "api": "/api/upload/processing-status",
+                        "api": f"/api/upload/processing-status?data_type={data_type}",
                         "interval": 5000,
                         "body": {
                             "type": "table",
