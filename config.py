@@ -32,8 +32,8 @@ class Settings(BaseSettings):
 
     # 多核处理配置
     MAX_WORKERS: int = 2  # 最大工作进程数
-    MULTIPROCESSING_THRESHOLD_GB: float = 2.0  # 使用多进程的文件大小阈值(GB)
-    MULTITHREADING_THRESHOLD_MB: float = 200.0  # 使用多线程的文件大小阈值(MB)
+    MULTIPROCESSING_THRESHOLD_GB: float = 1.0  # 使用多进程的文件大小阈值(GB)
+    MULTITHREADING_THRESHOLD_MB: float = 100.0  # 使用多线程的文件大小阈值(MB)
 
     # 内存优化配置
     CHUNK_QUEUE_SIZE: int = 20  # 数据队列最大大小

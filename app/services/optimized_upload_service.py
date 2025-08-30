@@ -82,8 +82,8 @@ class OptimizedUploadService(UploadService):
 
     def __init__(self, db: Session):
         super().__init__(db)
-        self.max_workers = min(4, os.cpu_count())
-        self.use_multiprocessing_threshold = 1 * 1024 * 1024 * 1024  # 1GB
+        self.max_workers = min(settings.MAX_WORKERS, os.cpu_count())
+        self.use_multiprocessing_threshold = settings.MULTIPROCESSING_THRESHOLD_GB * 1024 * 1024 * 1024  # 1GB
         logger.info(f"优化服务初始化，最大工作进程: {self.max_workers}")
 
     async def process_csv_file(
@@ -105,7 +105,7 @@ class OptimizedUploadService(UploadService):
                 return await self._process_with_multiprocessing(
                     file_path, original_filename, data_type
                 )
-            elif file_size >= 100 * 1024 * 1024:  # 100MB
+            elif file_size >= settings.MULTITHREADING_THRESHOLD_MB * 1024 * 1024:  # 100MB
                 # 中等文件：多线程处理
                 return await self._process_with_multithreading(
                     file_path, original_filename, data_type
@@ -121,10 +121,10 @@ class OptimizedUploadService(UploadService):
             return False, str(e), None
 
     async def _process_with_upsert_single_thread(
-        self,
-        file_path: str,
-        original_filename: str,
-        data_type: str
+            self,
+            file_path: str,
+            original_filename: str,
+            data_type: str
     ) -> Tuple[bool, str, Optional[ImportBatchRecords]]:
         """单线程去重处理 - 小文件使用"""
         batch_record = None
@@ -359,12 +359,12 @@ class OptimizedUploadService(UploadService):
             return False, str(e), batch_record
 
     async def _data_writer_with_upsert(
-        self,
-        data_queue: asyncio.Queue,
-        batch_record: ImportBatchRecords,
-        start_time: datetime,
-        report_date: date,
-        data_type: str
+            self,
+            data_queue: asyncio.Queue,
+            batch_record: ImportBatchRecords,
+            start_time: datetime,
+            report_date: date,
+            data_type: str
     ) -> Dict[str, Any]:
         """去重更新数据写入协程"""
         processed_count = 0
