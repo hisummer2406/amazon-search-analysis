@@ -3,34 +3,11 @@ version: '3.8'
 
 services:
   app:
-    build:
-      context: .
-      dockerfile: dockerfile
+    image: v4 
     ports:
       - "8000:8000"
-    environment:
-      - DATABASE_URL=postgresql://postgres:password@db:5432/amazon_db
-      - DATABASE_URL_ASYNC=postgresql+asyncpg://postgres:password@db:5432/amazon_db
-      - DATABASE_SCHEMA=analysis
-      - REDIS_URL=redis://redis:6379/0
-      - ADMIN_SECRET_KEY=your-super-secret-key-change-this-in-production
-      - APP_NAME=Amazon Data Analysis
-      - VERSION=1.0.0
-      - DEBUG=false
-      - UPLOAD_DIR=./uploads
-      - MAX_FILE_SIZE=3221225472
-      - BATCH_SIZE=5000
-      - QUERY_DAYS_LIMIT=7
-      - MAX_WORKERS=4
-      - MULTIPROCESSING_THRESHOLD_GB=1.0
-      - MULTITHREADING_THRESHOLD_MB=100.0
-      - CHUNK_QUEUE_SIZE=50
-      - SMALL_BATCH_SIZE=5000
-      - ENABLE_PERFORMANCE_MONITORING=true
-      - MONITORING_INTERVAL_SECONDS=5
     volumes:
-      - ./uploads:/app/uploads
-      - ./logs:/app/logs
+      - /var/www/amazon-search-analysis:/app
     depends_on:
       - db
       - redis
@@ -44,19 +21,18 @@ services:
           memory: 4G
 
   db:
-    image: postgres:15
+    image: registry.cn-beijing.aliyuncs.com/ruanjinggang/postgres:alpine
     environment:
-      POSTGRES_DB: amazon_db
+      POSTGRES_DB: amazon_search
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: pwd123
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=C --lc-ctype=C"
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./docs/analysis.sql:/docker-entrypoint-initdb.d/init.sql
-      - ./etc/postgresql.conf:/etc/postgresql/postgresql.conf
-    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+      - ./etc/postgresql.conf:/etc/postgresql.conf
+    command: postgres -c config_file=/etc/postgresql.conf
     deploy:
       resources:
         limits:
@@ -67,7 +43,7 @@ services:
           memory: 1G
 
   redis:
-    image: redis:7-alpine
+    image: registry.cn-beijing.aliyuncs.com/ruanjinggang/redis:5
     ports:
       - "6379:6379"
     command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru
