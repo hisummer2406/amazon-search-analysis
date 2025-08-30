@@ -98,7 +98,6 @@ class UploadComponent:
                                 {"name": "batch_name", "label": "文件名", "width": 200},
                                 {"name": "progress_percent", "label": "进度", "type": "progress", "width": 150},
                                 {"name": "total_records", "label": "总记录数", "width": 100},
-                                {"name": "processing_seconds", "label": "耗时(秒)", "width": 100},
                                 {"name": "status", "label": "状态", "width": 100}
                             ],
                             "placeholder": "暂无处理任务"
