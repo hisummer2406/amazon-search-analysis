@@ -1,10 +1,9 @@
 import logging
-from typing import Dict, Any, List
 from sqlalchemy.orm import Session
 
-from app.crud.analysis_crud import AnalysisCRUD
-from app.models.analysis_schemas import AmazonOriginSearchData
-from app.schemas.analysis_schemas import (
+from app.table.analysis.analysis_crud import AnalysisCRUD
+from app.table.analysis.analysis_model import AmazonOriginSearchData
+from app.table.search.search_schemas import (
     AnalysisSearchRequest,
     AnalysisSearchResponse,
     AnalysisDataItem,

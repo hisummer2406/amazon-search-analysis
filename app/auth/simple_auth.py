@@ -1,15 +1,14 @@
 # app/auth/simple_auth.py
 """简化版认证模块 - 只提供后台登录验证和超级用户管理"""
 import logging
-from typing import Optional
-from fastapi import Request, HTTPException, status, Depends
+from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from database import get_db, SessionFactory
-from app.crud.user_crud import UserCenterCRUD
-from app.models.user_models import UserCenter
-from app.services.login_auth import auth_service
+from app.user.user_crud import UserCenterCRUD
+from app.user.user_model import UserCenter
+from app.auth.login_auth import auth_service
 
 logger = logging.getLogger(__name__)
 security = HTTPBearer()

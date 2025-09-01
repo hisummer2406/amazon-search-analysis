@@ -1,12 +1,11 @@
 # app/services/csv_processor.py - 完整版本：保留原功能+去重逻辑
 import logging
 import pandas as pd
-import csv
-from typing import Iterator, Dict, Any, List, Optional
+from typing import Iterator, Dict, Any, List
 from pathlib import Path
 from datetime import datetime, date
 from sqlalchemy.orm import Session
-from app.models.analysis_schemas import AmazonOriginSearchData
+from app.table.analysis.analysis_model import AmazonOriginSearchData
 
 logger = logging.getLogger(__name__)
 

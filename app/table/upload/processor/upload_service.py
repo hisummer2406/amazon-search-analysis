@@ -1,16 +1,14 @@
 # app/services/upload_service.py - 去重更新版本
-import asyncio
 import logging
 import re
 from datetime import datetime, date
 from pathlib import Path
-from typing import Tuple, Optional, Dict, Any
+from typing import Tuple, Optional
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import SQLAlchemyError
 
-from app.models.import_schemas import ImportBatchRecords, StatusEnum
-from app.services.csv_processor import CSVProcessor
-from app.services.csv_processor import FileValidator
+from app.table.upload.import_model import ImportBatchRecords, StatusEnum
+from app.table.upload.processor.csv_processor import CSVProcessor
+from app.table.upload.processor.csv_processor import FileValidator
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -79,6 +77,7 @@ class UploadService:
             if batch_record:
                 self._update_batch_record_error(batch_record, str(e))
             return False, f"文件处理失败: {str(e)}", batch_record
+
 
     async def _process_csv_with_upsert(
         self,

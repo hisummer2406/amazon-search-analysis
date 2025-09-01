@@ -8,13 +8,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 
-from app.api.router import api_router
+from app.api_router import api_router
 from config import settings
 from database import engine, async_engine
-from app.admin.admin_site import site
+from app.admin_site import site
 from monitoring import SystemMonitor
-from app.admin.auth.login_admin import auth_router
-from app.middleware.auth_middleware import AdminAuthMiddleware
+from app.auth.login_admin import auth_router
+from app.auth.auth_middleware import AdminAuthMiddleware
 
 
 # 配置应用日志，每天自动生成新文件

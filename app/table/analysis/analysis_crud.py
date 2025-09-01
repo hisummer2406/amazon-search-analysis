@@ -1,11 +1,11 @@
 import logging
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, and_, or_, func, asc
-from typing import Dict, Any, Optional, List, Tuple
-from datetime import datetime, date
+from sqlalchemy import desc, or_, asc
+from typing import List, Tuple
+from datetime import datetime
 
-from app.models.analysis_schemas import AmazonOriginSearchData
-from app.schemas.analysis_schemas import AnalysisSearchRequest
+from app.table.analysis.analysis_model import AmazonOriginSearchData
+from app.table.search.search_schemas import AnalysisSearchRequest
 
 logger = logging.getLogger(__name__)
 

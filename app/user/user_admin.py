@@ -1,7 +1,7 @@
 # app/admin/user_admin.py
 from fastapi_amis_admin.admin import admin
-from fastapi_amis_admin.amis import PageSchema, Page, Dialog, Form, Button
-from app.admin.admin_site import site
+from fastapi_amis_admin.amis import PageSchema, Page, Dialog
+from app.admin_site import site
 from fastapi import Request
 
 

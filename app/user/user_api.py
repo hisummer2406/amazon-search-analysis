@@ -1,13 +1,13 @@
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from database import get_db
-from app.crud.user_crud import UserCenterCRUD
-from app.schemas.user_schemas import (UserCenterCreate, UserCenterUpdate)
-from app.services.simple_auth import simple_auth
+from app.user.user_crud import UserCenterCRUD
+from app.user.user_schemas import (UserCenterCreate, UserCenterUpdate)
+from app.auth.simple_auth import simple_auth
 
 logger = logging.getLogger(__name__)
 

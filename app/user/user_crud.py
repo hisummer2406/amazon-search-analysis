@@ -4,8 +4,8 @@ from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime
 import logging
 from passlib.context import CryptContext
-from app.models.user_models import UserCenter
-from app.schemas.user_schemas import UserCenterCreate, UserCenterUpdate, UserCenterList
+from app.user.user_model import UserCenter
+from app.user.user_schemas import UserCenterCreate, UserCenterUpdate, UserCenterList
 
 logger = logging.getLogger(__name__)
 

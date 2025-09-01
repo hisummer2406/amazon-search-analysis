@@ -7,7 +7,7 @@ class TableComponent:
         return {
             "type": "crud",
             "name": "data_table",
-            "className": "analysis-table m-2",
+            "className": "analysis-analysis m-2",
             # API配置 - 修复参数传递
             "api": {
                 "method": "get",

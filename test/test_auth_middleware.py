@@ -1,5 +1,5 @@
 import unittest
-from app.middleware.auth_middleware import AdminAuthMiddleware
+from app.auth.auth_middleware import AdminAuthMiddleware
 
 class TestAdminAuthMiddleware(unittest.TestCase):
     def middleware(self):

@@ -31,3 +31,5 @@ class ImportBatchRecords(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, server_default=func.now(),
                                                              onupdate=func.now())
+
+

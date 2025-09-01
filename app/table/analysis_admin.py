@@ -1,14 +1,13 @@
 from fastapi_amis_admin.admin import admin
 from fastapi_amis_admin.amis import PageSchema, Page
-from fastapi_amis_admin.amis.components import App, Tpl
 
-from app.admin.admin_site import site
+from app.admin_site import site
 from fastapi import Request
 
 # 导入组件
-from app.admin.analysis.search_component import SearchComponent
-from app.admin.analysis.table_component import TableComponent
-from app.admin.analysis.upload_component import UploadComponent
+from app.table.search.search_component import SearchComponent
+from app.table.analysis.table_component import TableComponent
+from app.table.upload.upload_component import UploadComponent
 
 
 @site.register_admin

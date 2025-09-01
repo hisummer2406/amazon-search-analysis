@@ -3,8 +3,8 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 
-from app.services.simple_auth import simple_auth
-from app.models.user_models import UserCenter
+from app.auth.simple_auth import simple_auth
+from app.user.user_model import UserCenter
 
 auth_router = APIRouter()
 

@@ -137,7 +137,7 @@ CREATE TABLE "analysis"."user_center" (
 ALTER TABLE "analysis"."user_center" OWNER TO "postgres";
 
 -- ----------------------------
--- Indexes structure for table amazon_origin_search_data
+-- Indexes structure for analysis amazon_origin_search_data
 -- ----------------------------
 CREATE INDEX "idx_amazon_click_share_desc" ON "analysis"."amazon_origin_search_data" USING btree (
   "top_product_click_share" "pg_catalog"."numeric_ops" DESC NULLS FIRST
@@ -189,12 +189,12 @@ CREATE INDEX "idx_keyword_text" ON "analysis"."amazon_origin_search_data" USING 
 );
 
 -- ----------------------------
--- Primary Key structure for table amazon_origin_search_data
+-- Primary Key structure for analysis amazon_origin_search_data
 -- ----------------------------
 ALTER TABLE "analysis"."amazon_origin_search_data" ADD CONSTRAINT "amazon_origin_search_data_pkey" PRIMARY KEY ("id");
 
 -- ----------------------------
--- Indexes structure for table import_batch_records
+-- Indexes structure for analysis import_batch_records
 -- ----------------------------
 CREATE INDEX "idx_import_batch_records_created_at" ON "analysis"."import_batch_records" USING btree (
   "created_at" "pg_catalog"."timestamptz_ops" ASC NULLS LAST
@@ -207,12 +207,12 @@ CREATE INDEX "idx_import_batch_records_status" ON "analysis"."import_batch_recor
 );
 
 -- ----------------------------
--- Primary Key structure for table import_batch_records
+-- Primary Key structure for analysis import_batch_records
 -- ----------------------------
 ALTER TABLE "analysis"."import_batch_records" ADD CONSTRAINT "import_batch_records_pkey" PRIMARY KEY ("id");
 
 -- ----------------------------
--- Indexes structure for table user_center
+-- Indexes structure for analysis user_center
 -- ----------------------------
 CREATE UNIQUE INDEX "idx_user_unique" ON "analysis"."user_center" USING btree (
   "user_name" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
@@ -220,7 +220,7 @@ CREATE UNIQUE INDEX "idx_user_unique" ON "analysis"."user_center" USING btree (
 COMMENT ON INDEX "analysis"."idx_user_unique" IS '唯一用户';
 
 -- ----------------------------
--- Primary Key structure for table user_center
+-- Primary Key structure for analysis user_center
 -- ----------------------------
 ALTER TABLE "analysis"."user_center" ADD CONSTRAINT "user_center_pkey" PRIMARY KEY ("id");
 

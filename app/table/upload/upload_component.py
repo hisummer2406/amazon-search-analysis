@@ -1,15 +1,9 @@
-# ============= app/admin/analysis/upload_component.py =============
-"""
-上传组件 - 修复文件上传问题的最终版本
-针对 fastapi-amis-admin 框架优化
-"""
-from imp import reload
-
+# app/admin/analysis/upload_component.py - 支持分块上传
 import config
 
 
 class UploadComponent:
-    """上传功能组件"""
+    """上传功能组件 - 支持分块上传"""
 
     @staticmethod
     def build_upload_buttons() -> dict:
@@ -18,11 +12,7 @@ class UploadComponent:
             "type": "flex",
             "justify": "space-between",
             "items": [
-                {
-                    "type": "tpl",
-                    "tpl": "",  # 占位符，保持布局
-                    "className": "flex-1"
-                },
+                {"type": "tpl", "tpl": "", "className": "flex-1"},
                 {
                     "type": "flex",
                     "items": [
@@ -68,29 +58,42 @@ class UploadComponent:
                         "required": True,
                         "drag": True,
                         "multiple": False,
-                        "description": f"请选择{title}的CSV文件，文件大小限制3GB",
-                        # 移除可能冲突的配置
-                        "autoUpload": False,
-                        "useChunk": False,
-                        "hideUploadButton": True,
-                        # 文件大小限制
-                        "maxSize": config.settings.MAX_FILE_SIZE,  # 3GBs
+                        "description": f"支持大文件上传，{title}的CSV文件",
+
+                        # 传统上传接口（小文件使用）
                         "receiver": "/api/upload/upload-csv",
+
+                        # AMIS分块上传配置
+                        "startChunkApi": {
+                            "url": "/api/upload/startChunkApi",
+                            "method": "post",
+                            "data": {
+                                "filename": "${filename}",
+                                "filesize": "${size}",
+                                "data_type": data_type
+                            }
+                        },
+                        "chunkApi": "/api/upload/chunkApi",
+                        "finishChunkApi": "/api/upload/finishChunkApi",
+
+                        # 分块配置 - 符合AMIS规范
+                        "chunkSize": 10 * 1024 * 1024,  # 5MB per chunk
+                        "useChunk": "auto",  # 让AMIS自动判断是否分块
+                        "concurrency": 3,  # 并发上传数量
+
+                        # 上传成功后的处理
+                        "onUploaded": "console.log('上传完成:', event.data)"
                     },
                     {
                         "type": "hidden",
                         "name": "data_type",
                         "value": data_type
                     },
-                    {
-                        "type": "divider"
-                    },
-                    # 关键：状态监控区域
+                    {"type": "divider"},
                     {
                         "type": "service",
                         "name": "processing_status",
                         "api": f"/api/upload/processing-status?data_type={data_type}",
-                        # "interval": 60000,
                         "body": {
                             "type": "table",
                             "source": "${items}",

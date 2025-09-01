@@ -1,8 +1,7 @@
 import asyncio
 
-from database import SessionFactory
 from monitoring import PerformanceMonitor
-from app.services.optimized_upload_service import OptimizedUploadService
+from app.table.upload.processor.optimized_upload_service import OptimizedUploadService
 import logging
 
 logger = logging.getLogger(__name__)

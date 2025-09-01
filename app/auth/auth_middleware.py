@@ -43,8 +43,8 @@ class AdminAuthMiddleware(BaseHTTPMiddleware):
 
         try:
             from database import SessionFactory
-            from app.services.login_auth import auth_service
-            from app.crud.user_crud import UserCenterCRUD
+            from app.auth.login_auth import auth_service
+            from app.user.user_crud import UserCenterCRUD
 
             token = auth_header.split(' ')[1]
             payload = auth_service.decode_access_token(token)
