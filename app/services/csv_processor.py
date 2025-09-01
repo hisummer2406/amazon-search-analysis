@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class CSVProcessor:
     """CSV文件处理工具类 - 专为大文件优化 + 去重逻辑"""
 
-    def __init__(self, batch_size: int = 10000):
+    def __init__(self, batch_size: int = 5000):
         self.batch_size = batch_size
 
     def read_csv_chunks(self, file_path: str) -> Iterator[pd.DataFrame]:

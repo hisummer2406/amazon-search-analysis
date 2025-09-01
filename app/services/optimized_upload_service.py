@@ -37,7 +37,7 @@ def _process_chunk_worker(
         # 解析日期
         report_date = date.fromisoformat(report_date_str)
 
-        processor = CSVProcessor(batch_size=5000)
+        processor = CSVProcessor(batch_size=settings.BATCH_SIZE)
         processed_count = 0
 
         # 创建独立的数据库会话
