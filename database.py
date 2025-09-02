@@ -23,15 +23,17 @@ engine = create_engine(
     max_overflow=settings.DB_MAX_OVERFLOW,
     pool_timeout=settings.DB_POOL_TIMEOUT,
     pool_recycle=settings.DB_POOL_RECYCLE,
-    pool_pre_ping=settings.DB_POOL_PRE_PING,
     echo=settings.DEBUG,
+    connect_args={
+        "options": "-c timezone=Asia/Shanghai"
+    }
 )
 
 # 会话工厂
 SessionFactory = sessionmaker(
     bind=engine,
     expire_on_commit=False,
-    autoflush=False,
+    autoflush=True,
     autocommit=False,
 )
 
@@ -42,8 +44,12 @@ async_engine = create_async_engine(
     max_overflow=settings.DB_MAX_OVERFLOW,
     pool_timeout=settings.DB_POOL_TIMEOUT,
     pool_recycle=settings.DB_POOL_RECYCLE,
-    pool_pre_ping=settings.DB_POOL_PRE_PING,
     echo=settings.DEBUG,
+    connect_args={
+        "server_settings": {
+            "timezone": "Asia/Shanghai"
+        }
+    }
 )
 
 # 异步会话工厂

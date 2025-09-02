@@ -29,7 +29,7 @@ class ImportBatchRecords(Base):
     is_week_data: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     error_message: Mapped[str] = mapped_column(Text, nullable=False, default='')
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
-    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, server_default=func.now(),
-                                                             onupdate=func.now())
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, server_default=func.now(),onupdate=func.now())
+
 
 

@@ -23,7 +23,7 @@ def _process_chunk_worker(chunk_file: str, report_date_str: str, data_type: str,
         from app.table.upload.processor.csv_processor import CSVProcessor
 
         report_date = date.fromisoformat(report_date_str)
-        processor = CSVProcessor(batch_size=5000)
+        processor = CSVProcessor(batch_size=settings.BATCH_SIZE)
         processed_count = 0
 
         # 独立数据库会话

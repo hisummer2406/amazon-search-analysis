@@ -24,10 +24,10 @@ class UploadService:
         self.file_validator = FileValidator()
 
     async def process_csv_file(
-        self,
-        file_path: str,
-        original_filename: str,
-        data_type: str
+            self,
+            file_path: str,
+            original_filename: str,
+            data_type: str
     ) -> Tuple[bool, str, Optional[ImportBatchRecords]]:
         """处理CSV文件上传 - 去重更新版本"""
         batch_record = None
@@ -65,9 +65,12 @@ class UploadService:
                 # 6. 更新批次记录为完成状态
                 batch_record.status = StatusEnum.COMPLETED
                 batch_record.completed_at = datetime.now()
-                final_processing_seconds = int((batch_record.completed_at - batch_record.created_at).total_seconds())
+                # 时区问题
+                final_processing_seconds = int((datetime.now() - batch_record.created_at.replace(tzinfo=None)).total_seconds())
                 batch_record.processing_seconds = final_processing_seconds
                 self.db.commit()
+                self.db.refresh(batch_record)
+
                 logger.info(f"CSV文件处理完成: {original_filename}, 总耗时: {final_processing_seconds}秒")
 
             return success, message, batch_record
@@ -78,13 +81,12 @@ class UploadService:
                 self._update_batch_record_error(batch_record, str(e))
             return False, f"文件处理失败: {str(e)}", batch_record
 
-
     async def _process_csv_with_upsert(
-        self,
-        file_path: str,
-        batch_record: ImportBatchRecords,
-        report_date: date,
-        data_type: str
+            self,
+            file_path: str,
+            batch_record: ImportBatchRecords,
+            report_date: date,
+            data_type: str
     ) -> Tuple[bool, str]:
         """使用去重更新逻辑处理CSV文件"""
         try:
@@ -155,12 +157,12 @@ class UploadService:
             return None
 
     def _create_batch_record(
-        self,
-        batch_name: str,
-        import_date: date,
-        total_records: int,
-        is_day_data: bool,
-        is_week_data: bool
+            self,
+            batch_name: str,
+            import_date: date,
+            total_records: int,
+            is_day_data: bool,
+            is_week_data: bool
     ) -> ImportBatchRecords:
         """创建导入批次记录"""
         try:
@@ -194,11 +196,12 @@ class UploadService:
         try:
             batch_record.status = StatusEnum.FAILED
             batch_record.error_message = error_message
-            batch_record.completed_at = datetime.now()
 
+            batch_record.completed_at = datetime.now()
+            # 时区问题
             if batch_record.created_at:
                 batch_record.processing_seconds = int(
-                    (batch_record.completed_at - batch_record.created_at).total_seconds())
+                    (batch_record.completed_at - batch_record.created_at.replace(tzinfo=None)).total_seconds())
 
             self.db.commit()
             logger.error(f"更新批次记录错误状态: {error_message}")
