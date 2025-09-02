@@ -58,7 +58,9 @@ class UploadComponent:
                         "required": True,
                         "drag": True,
                         "multiple": False,
+                        "autoUpload": False,
                         "description": f"支持大文件上传，{title}的CSV文件",
+                        "className": "hide-upload-button",  # 添加自定义class
 
                         # 传统上传接口（小文件使用）
                         "receiver": "/api/upload/upload-csv",

@@ -1,17 +1,18 @@
-# app/table/upload/csv_processor.py - 简化版：保留大文件处理核心功能
+# app/table/upload/csv_processor.py - 优化版：使用 INSERT ... ON CONFLICT DO UPDATE
 import logging
 import pandas as pd
 from typing import Iterator, Dict, Any, List
 from pathlib import Path
 from datetime import datetime, date
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from app.table.analysis.analysis_model import AmazonOriginSearchData
 
 logger = logging.getLogger(__name__)
 
 
 class CSVProcessor:
-    """CSV文件处理工具类 - 专为超大文件优化"""
+    """CSV文件处理工具类 - 使用PostgreSQL UPSERT优化"""
 
     def __init__(self, batch_size: int = 5000):
         self.batch_size = batch_size
@@ -68,148 +69,246 @@ class CSVProcessor:
             data_type: str,
             db_session: Session
     ) -> int:
-        """处理数据块并执行去重更新逻辑"""
-        processed_count = 0
+        """使用PostgreSQL UPSERT批量处理数据块"""
+        if len(df) == 0:
+            return 0
 
-        for _, row in df.iterrows():
-            try:
+        try:
+            # 准备批量数据
+            batch_data = []
+            now = datetime.now()
+
+            for _, row in df.iterrows():
                 keyword = str(row.get('keyword', '')).strip()
                 if not keyword:
                     continue
 
-                # 查找现有记录
-                existing_record = db_session.query(AmazonOriginSearchData).filter(
-                    AmazonOriginSearchData.keyword == keyword
-                ).first()
-
                 current_ranking = int(float(row.get('current_rangking_day', 0))) if row.get(
                     'current_rangking_day') else 0
+                record_data = self._prepare_record_data(row, report_date, data_type, current_ranking, now)
+                batch_data.append(record_data)
 
-                if existing_record:
-                    # 更新逻辑
-                    if self._should_skip_update(existing_record, report_date, data_type):
-                        continue
-                    self._update_existing_record(existing_record, row, report_date, data_type, current_ranking)
-                else:
-                    # 插入新记录
-                    new_record = self._create_new_record(row, report_date, data_type, current_ranking)
-                    db_session.add(new_record)
+            if not batch_data:
+                return 0
 
-                processed_count += 1
+            # 执行批量UPSERT - 逐条执行以避免批量绑定问题
+            upsert_sql = self._build_upsert_sql(data_type)
+            processed_count = 0
 
-                # 批量提交
-                if processed_count % 1000 == 0:
-                    db_session.commit()
+            for data in batch_data:
+                try:
+                    # 检查事务状态，如果中止则重新开始
+                    if not db_session.is_active:
+                        db_session.rollback()
+                        db_session.begin()
 
-            except Exception as e:
-                logger.warning(f"处理记录失败，跳过: {e}")
-                continue
+                    db_session.execute(text(upsert_sql), data)
+                    processed_count += 1
+                except Exception as e:
+                    logger.warning(f"单条记录UPSERT失败: {data.get('keyword', 'N/A')}, 错误: {e}")
+                    # 发生错误时回滚当前事务
+                    db_session.rollback()
+                    db_session.begin()  # 开始新的事务
+                    continue
 
-        db_session.commit()
-        return processed_count
+            db_session.commit()
+            return processed_count
 
-    def _should_skip_update(self, record: AmazonOriginSearchData, report_date: date, data_type: str) -> bool:
-        """判断是否应跳过更新"""
+        except Exception as e:
+            db_session.rollback()
+            logger.error(f"UPSERT处理失败: {e}")
+            logger.error(f"错误详情: {str(e)}")
+            raise
+
+    def _build_upsert_sql(self, data_type: str) -> str:
+        """构建UPSERT SQL语句 - 使用:param格式"""
         if data_type == 'daily':
-            return record.report_date_day == report_date
+            return """
+                   INSERT INTO analysis.amazon_origin_search_data (keyword, created_at, updated_at, \
+                                                                   current_rangking_day, report_date_day, \
+                                                                   previous_rangking_day, \
+                                                                   ranking_change_day, is_new_day, ranking_trend_day, \
+                                                                   current_rangking_week, report_date_week, \
+                                                                   previous_rangking_week, \
+                                                                   ranking_change_week, is_new_week, \
+                                                                   top_brand, top_category, top_product_asin, \
+                                                                   top_product_title, \
+                                                                   top_product_click_share, \
+                                                                   top_product_conversion_share, \
+                                                                   brand_2nd, category_2nd, product_asin_2nd, \
+                                                                   product_title_2nd, \
+                                                                   product_click_share_2nd, \
+                                                                   product_conversion_share_2nd, \
+                                                                   brand_3rd, category_3rd, product_asin_3rd, \
+                                                                   product_title_3rd, \
+                                                                   product_click_share_3rd, \
+                                                                   product_conversion_share_3rd)
+                   VALUES (:keyword, :created_at, :updated_at, \
+                           :current_rangking_day, :report_date_day, :previous_rangking_day, \
+                           :ranking_change_day, :is_new_day, CAST(:ranking_trend_day AS jsonb), \
+                           :current_rangking_week, :report_date_week, :previous_rangking_week, \
+                           :ranking_change_week, :is_new_week, \
+                           :top_brand, :top_category, :top_product_asin, :top_product_title, \
+                           :top_product_click_share, :top_product_conversion_share, \
+                           :brand_2nd, :category_2nd, :product_asin_2nd, :product_title_2nd, \
+                           :product_click_share_2nd, :product_conversion_share_2nd, \
+                           :brand_3rd, :category_3rd, :product_asin_3rd, :product_title_3rd, \
+                           :product_click_share_3rd, :product_conversion_share_3rd) ON CONFLICT (keyword) DO \
+                   UPDATE SET
+                       updated_at = EXCLUDED.updated_at, \
+                       previous_rangking_day = CASE \
+                       WHEN amazon_origin_search_data.report_date_day = EXCLUDED.report_date_day \
+                       THEN amazon_origin_search_data.previous_rangking_day \
+                       ELSE amazon_origin_search_data.current_rangking_day
+                   END \
+                   ,
+                    current_rangking_day = EXCLUDED.current_rangking_day,
+                    ranking_change_day = CASE 
+                        WHEN amazon_origin_search_data.report_date_day = EXCLUDED.report_date_day 
+                        THEN amazon_origin_search_data.ranking_change_day
+                        ELSE EXCLUDED.current_rangking_day - amazon_origin_search_data.current_rangking_day
+                   END \
+                   ,
+                    report_date_day = EXCLUDED.report_date_day,
+                    is_new_day = CASE 
+                        WHEN amazon_origin_search_data.report_date_day = EXCLUDED.report_date_day 
+                        THEN amazon_origin_search_data.is_new_day
+                        ELSE false
+                   END \
+                   ,
+                    ranking_trend_day = CASE 
+                        WHEN amazon_origin_search_data.report_date_day = EXCLUDED.report_date_day 
+                        THEN (
+                            -- 如果是同一天的数据，更新当天的排名
+                            SELECT jsonb_agg(
+                                CASE 
+                                    WHEN item->>'date' = EXCLUDED.report_date_day::text 
+                                    THEN jsonb_build_object('date', item->>'date', 'ranking', EXCLUDED.current_rangking_day)
+                                    ELSE item
+                                END
+                            )
+                            FROM jsonb_array_elements(amazon_origin_search_data.ranking_trend_day) AS item
+                        )
+                        ELSE (
+                            -- 如果是新的一天，添加新数据并保留最近7天
+                            WITH existing_items AS (
+                                SELECT item
+                                FROM jsonb_array_elements(amazon_origin_search_data.ranking_trend_day) AS item
+                                WHERE (item->>'date')::date != EXCLUDED.report_date_day
+                                ORDER BY (item->>'date')::date DESC
+                                LIMIT 6
+                            ),
+                            new_item AS (
+                                SELECT jsonb_build_object('date', EXCLUDED.report_date_day::text, 'ranking', EXCLUDED.current_rangking_day) AS item
+                            ),
+                            combined AS (
+                                SELECT item FROM new_item
+                                UNION ALL
+                                SELECT item FROM existing_items
+                            )
+                            SELECT jsonb_agg(item ORDER BY (item->>'date')::date DESC)
+                            FROM combined
+                        )
+                   END \
+                   ,
+                    top_brand = EXCLUDED.top_brand,
+                    top_category = EXCLUDED.top_category,
+                    top_product_asin = EXCLUDED.top_product_asin,
+                    top_product_title = EXCLUDED.top_product_title,
+                    top_product_click_share = EXCLUDED.top_product_click_share,
+                    top_product_conversion_share = EXCLUDED.top_product_conversion_share,
+                    brand_2nd = EXCLUDED.brand_2nd,
+                    category_2nd = EXCLUDED.category_2nd,
+                    product_asin_2nd = EXCLUDED.product_asin_2nd,
+                    product_title_2nd = EXCLUDED.product_title_2nd,
+                    product_click_share_2nd = EXCLUDED.product_click_share_2nd,
+                    product_conversion_share_2nd = EXCLUDED.product_conversion_share_2nd,
+                    brand_3rd = EXCLUDED.brand_3rd,
+                    category_3rd = EXCLUDED.category_3rd,
+                    product_asin_3rd = EXCLUDED.product_asin_3rd,
+                    product_title_3rd = EXCLUDED.product_title_3rd,
+                    product_click_share_3rd = EXCLUDED.product_click_share_3rd,
+                    product_conversion_share_3rd = EXCLUDED.product_conversion_share_3rd \
+                   """
         else:  # weekly
-            return record.report_date_week == report_date
+            # 周数据的SQL保持不变
+            return """
+                   INSERT INTO analysis.amazon_origin_search_data (keyword, created_at, updated_at, \
+                                                                   current_rangking_week, report_date_week, \
+                                                                   previous_rangking_week, \
+                                                                   ranking_change_week, is_new_week, \
+                                                                   current_rangking_day, report_date_day, \
+                                                                   previous_rangking_day, \
+                                                                   ranking_change_day, is_new_day, ranking_trend_day, \
+                                                                   top_brand, top_category, top_product_asin, \
+                                                                   top_product_title, \
+                                                                   top_product_click_share, \
+                                                                   top_product_conversion_share, \
+                                                                   brand_2nd, category_2nd, product_asin_2nd, \
+                                                                   product_title_2nd, \
+                                                                   product_click_share_2nd, \
+                                                                   product_conversion_share_2nd, \
+                                                                   brand_3rd, category_3rd, product_asin_3rd, \
+                                                                   product_title_3rd, \
+                                                                   product_click_share_3rd, \
+                                                                   product_conversion_share_3rd)
+                   VALUES (:keyword, :created_at, :updated_at, \
+                           :current_rangking_week, :report_date_week, :previous_rangking_week, \
+                           :ranking_change_week, :is_new_week, \
+                           :current_rangking_day, :report_date_day, :previous_rangking_day, \
+                           :ranking_change_day, :is_new_day, CAST(:ranking_trend_day AS jsonb), \
+                           :top_brand, :top_category, :top_product_asin, :top_product_title, \
+                           :top_product_click_share, :top_product_conversion_share, \
+                           :brand_2nd, :category_2nd, :product_asin_2nd, :product_title_2nd, \
+                           :product_click_share_2nd, :product_conversion_share_2nd, \
+                           :brand_3rd, :category_3rd, :product_asin_3rd, :product_title_3rd, \
+                           :product_click_share_3rd, :product_conversion_share_3rd) ON CONFLICT (keyword) DO \
+                   UPDATE SET
+                       updated_at = EXCLUDED.updated_at, \
+                       previous_rangking_week = CASE \
+                       WHEN amazon_origin_search_data.report_date_week = EXCLUDED.report_date_week \
+                       THEN amazon_origin_search_data.previous_rangking_week \
+                       ELSE amazon_origin_search_data.current_rangking_week
+                   END \
+                   ,
+                    current_rangking_week = EXCLUDED.current_rangking_week,
+                    ranking_change_week = CASE 
+                        WHEN amazon_origin_search_data.report_date_week = EXCLUDED.report_date_week 
+                        THEN amazon_origin_search_data.ranking_change_week
+                        ELSE EXCLUDED.current_rangking_week - amazon_origin_search_data.current_rangking_week
+                   END \
+                   ,
+                    report_date_week = EXCLUDED.report_date_week,
+                    is_new_week = CASE 
+                        WHEN amazon_origin_search_data.report_date_week = EXCLUDED.report_date_week 
+                        THEN amazon_origin_search_data.is_new_week
+                        ELSE false
+                   END \
+                   ,
+                    top_brand = EXCLUDED.top_brand,
+                    top_category = EXCLUDED.top_category,
+                    top_product_asin = EXCLUDED.top_product_asin,
+                    top_product_title = EXCLUDED.top_product_title,
+                    top_product_click_share = EXCLUDED.top_product_click_share,
+                    top_product_conversion_share = EXCLUDED.top_product_conversion_share,
+                    brand_2nd = EXCLUDED.brand_2nd,
+                    category_2nd = EXCLUDED.category_2nd,
+                    product_asin_2nd = EXCLUDED.product_asin_2nd,
+                    product_title_2nd = EXCLUDED.product_title_2nd,
+                    product_click_share_2nd = EXCLUDED.product_click_share_2nd,
+                    product_conversion_share_2nd = EXCLUDED.product_conversion_share_2nd,
+                    brand_3rd = EXCLUDED.brand_3rd,
+                    category_3rd = EXCLUDED.category_3rd,
+                    product_asin_3rd = EXCLUDED.product_asin_3rd,
+                    product_title_3rd = EXCLUDED.product_title_3rd,
+                    product_click_share_3rd = EXCLUDED.product_click_share_3rd,
+                    product_conversion_share_3rd = EXCLUDED.product_conversion_share_3rd \
+                   """
 
-    def _update_existing_record(
-            self,
-            record: AmazonOriginSearchData,
-            row: pd.Series,
-            report_date: date,
-            data_type: str,
-            current_ranking: int
-    ):
-        """更新现有记录"""
-        now = datetime.now()
+    def _prepare_record_data(self, row: pd.Series, report_date: date, data_type: str, current_ranking: int,
+                             now: datetime) -> Dict[str, Any]:
+        """准备记录数据"""
 
-        if data_type == 'daily':
-            record.previous_rangking_day = record.current_rangking_day
-            record.current_rangking_day = current_ranking
-            record.ranking_change_day = current_ranking - record.previous_rangking_day
-            record.report_date_day = report_date
-            record.is_new_day = False
-            self._update_trend_data(record, report_date, current_ranking)
-        else:  # weekly
-            record.previous_rangking_week = record.current_rangking_week
-            record.current_rangking_week = current_ranking
-            record.ranking_change_week = current_ranking - record.previous_rangking_week
-            record.report_date_week = report_date
-            record.is_new_week = False
-
-        # 更新商品信息
-        self._update_product_info(record, row)
-        record.updated_at = now
-
-    def _create_new_record(
-            self,
-            row: pd.Series,
-            report_date: date,
-            data_type: str,
-            current_ranking: int
-    ) -> AmazonOriginSearchData:
-        """创建新记录"""
-        now = datetime.now()
-
-        record = AmazonOriginSearchData(
-            keyword=str(row.get('keyword', '')).strip(),
-            created_at=now,
-            updated_at=now
-        )
-
-        if data_type == 'daily':
-            record.current_rangking_day = current_ranking
-            record.report_date_day = report_date
-            record.previous_rangking_day = 0
-            record.ranking_change_day = 0
-            record.is_new_day = True
-            record.ranking_trend_day = [{"date": report_date.isoformat(), "ranking": current_ranking}]
-            # 周数据设置默认值
-            record.current_rangking_week = 0
-            record.report_date_week = report_date
-            record.previous_rangking_week = 0
-            record.ranking_change_week = 0
-            record.is_new_week = False
-        else:  # weekly
-            record.current_rangking_week = current_ranking
-            record.report_date_week = report_date
-            record.previous_rangking_week = 0
-            record.ranking_change_week = 0
-            record.is_new_week = True
-            # 日数据设置默认值
-            record.current_rangking_day = 0
-            record.report_date_day = report_date
-            record.previous_rangking_day = 0
-            record.ranking_change_day = 0
-            record.is_new_day = False
-            record.ranking_trend_day = []
-
-        self._update_product_info(record, row)
-        return record
-
-    def _update_trend_data(self, record: AmazonOriginSearchData, report_date: date, ranking: int):
-        """更新7天趋势数据"""
-        trends = record.ranking_trend_day or []
-        current_date_str = report_date.isoformat()
-
-        # 使用字典去重，相同日期只保留最新数据
-        trend_dict = {}
-        for trend in trends:
-            if isinstance(trend, dict) and "date" in trend and "ranking" in trend:
-                trend_dict[trend["date"]] = int(trend["ranking"])
-
-        # 更新或添加当前日期数据
-        trend_dict[current_date_str] = ranking
-
-        # 转换回列表，按日期排序，保留最近7天
-        sorted_trends = sorted(trend_dict.items())[-7:]
-        record.ranking_trend_day = [{"date": date_str, "ranking": rank} for date_str, rank in sorted_trends]
-
-    def _update_product_info(self, record: AmazonOriginSearchData, row: pd.Series):
-        """更新商品信息"""
         def safe_get(col, default='', dtype=str):
             val = row.get(col, default)
             if pd.isna(val) or val == '':
@@ -219,30 +318,79 @@ class CSVProcessor:
             except:
                 return default if dtype == str else (0.0 if dtype == float else 0)
 
-        # Top产品信息
-        record.top_brand = safe_get('top_brand')
-        record.top_category = safe_get('top_category')
-        record.top_product_asin = safe_get('top_product_asin')
-        record.top_product_title = safe_get('top_product_title')
-        record.top_product_click_share = safe_get('top_product_click_share', 0.0, float)
-        record.top_product_conversion_share = safe_get('top_product_conversion_share', 0.0, float)
+        # 基础数据
+        data = {
+            'keyword': str(row.get('keyword', '')).strip(),
+            'created_at': now,
+            'updated_at': now,
+            'report_date': report_date,
+            'current_ranking': current_ranking,
 
-        # 第二名产品
-        record.brand_2nd = safe_get('brand_2nd')
-        record.category_2nd = safe_get('category_2nd')
-        record.product_asin_2nd = safe_get('product_asin_2nd')
-        record.product_title_2nd = safe_get('product_title_2nd')
-        record.product_click_share_2nd = safe_get('product_click_share_2nd', 0.0, float)
-        record.product_conversion_share_2nd = safe_get('product_conversion_share_2nd', 0.0, float)
+            # 商品信息
+            'top_brand': safe_get('top_brand'),
+            'top_category': safe_get('top_category'),
+            'top_product_asin': safe_get('top_product_asin'),
+            'top_product_title': safe_get('top_product_title'),
+            'top_product_click_share': safe_get('top_product_click_share', 0.0, float),
+            'top_product_conversion_share': safe_get('top_product_conversion_share', 0.0, float),
 
-        # 第三名产品
-        record.brand_3rd = safe_get('brand_3rd')
-        record.category_3rd = safe_get('category_3rd')
-        record.product_asin_3rd = safe_get('product_asin_3rd')
-        record.product_title_3rd = safe_get('product_title_3rd')
-        record.product_click_share_3rd = safe_get('product_click_share_3rd', 0.0, float)
-        record.product_conversion_share_3rd = safe_get('product_conversion_share_3rd', 0.0, float)
+            'brand_2nd': safe_get('brand_2nd'),
+            'category_2nd': safe_get('category_2nd'),
+            'product_asin_2nd': safe_get('product_asin_2nd'),
+            'product_title_2nd': safe_get('product_title_2nd'),
+            'product_click_share_2nd': safe_get('product_click_share_2nd', 0.0, float),
+            'product_conversion_share_2nd': safe_get('product_conversion_share_2nd', 0.0, float),
 
+            'brand_3rd': safe_get('brand_3rd'),
+            'category_3rd': safe_get('category_3rd'),
+            'product_asin_3rd': safe_get('product_asin_3rd'),
+            'product_title_3rd': safe_get('product_title_3rd'),
+            'product_click_share_3rd': safe_get('product_click_share_3rd', 0.0, float),
+            'product_conversion_share_3rd': safe_get('product_conversion_share_3rd', 0.0, float),
+        }
+
+        import json
+
+        # 根据数据类型设置特定字段
+        if data_type == 'daily':
+            ranking_trend_data = [{"date": report_date.isoformat(), "ranking": current_ranking}]
+
+            data.update({
+                'current_rangking_day': current_ranking,
+                'report_date_day': report_date,
+                'previous_rangking_day': 0,  # 由数据库处理
+                'ranking_change_day': 0,  # 由数据库计算
+                'is_new_day': True,  # 由数据库处理
+                'ranking_trend_day': json.dumps(ranking_trend_data),
+
+                # 周数据默认值
+                'current_rangking_week': 0,
+                'report_date_week': report_date,
+                'previous_rangking_week': 0,
+                'ranking_change_week': 0,
+                'is_new_week': False
+            })
+        else:  # weekly
+            data.update({
+                'current_rangking_week': current_ranking,
+                'report_date_week': report_date,
+                'previous_rangking_week': 0,  # 由数据库处理
+                'ranking_change_week': 0,  # 由数据库计算
+                'is_new_week': True,  # 由数据库处理
+
+                # 日数据默认值
+                'current_rangking_day': 0,
+                'report_date_day': report_date,
+                'previous_rangking_day': 0,
+                'ranking_change_day': 0,
+                'is_new_day': False,
+                'ranking_trend_day': '[]'
+            })
+
+        return data
+
+
+    # 保持原有的辅助方法不变
     def get_file_info(self, file_path: str) -> Dict[str, Any]:
         """获取CSV文件信息"""
         try:

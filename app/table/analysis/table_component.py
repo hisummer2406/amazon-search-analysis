@@ -21,8 +21,8 @@ class TableComponent:
                     "perPage": "${perPage || 100}",
 
                     # 添加排序参数
-                    "orderBy": "${orderBy}",
-                    "orderDir": "${orderDir}",
+                    "orderBy": "${orderBy || 'current_rangking_day'}",
+                    "orderDir": "${orderDir || 'asc'}",
 
                     # 基础搜索条件参数
                     "keyword": "${keyword}",

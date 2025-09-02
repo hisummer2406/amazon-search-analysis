@@ -428,6 +428,16 @@
     transition: all 0.2s ease;
 }
 
+/* 隐藏自动上传按钮 */
+.hide-upload-button .cxd-FileControl-uploadBtn {
+    display: none !important;
+}
+
+/* 或者更具体的选择器 */
+.hide-upload-button .cxd-FileControl .cxd-FileControl-uploadBtn {
+    display: none !important;
+}
+
 /* === 打印样式 === */
 @media print {
     .search-form,

@@ -41,8 +41,8 @@ async def search_data(
         perPage: int = Query(50, ge=1, le=200, description="每页数量"),
 
         # 排序字段
-        orderBy: Optional[str] = Query(None, description="当前搜索频率排名日"),
-        orderDir: Optional[str] = Query(None, description="升序"),
+        orderBy: Optional[str] = Query("current_rangking_day", description="排序字段，默认按日排名排序"),
+        orderDir: Optional[str] = Query("asc", description="排序方向，默认升序"),
 
         # 基础搜索条件参数
         keyword: Optional[str] = Query(None, description="关键词搜索"),
