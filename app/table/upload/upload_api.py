@@ -1,9 +1,10 @@
-# app/api/upload_api.py - 修复AMIS分块上传兼容性
+# app/api/upload_api.py - 修复异步调用问题
 import logging
 import os
 import uuid
 import aiofiles
 import tempfile
+import asyncio
 from fastapi import APIRouter, UploadFile, File, Form, BackgroundTasks
 from typing import Dict, Any, Optional
 from datetime import datetime
@@ -21,12 +22,12 @@ upload_router = APIRouter()
 chunk_sessions = {}
 
 
-def process_csv_background(file_path: str, original_filename: str, data_type: str):
-    """后台处理CSV文件 - 独立数据库会话"""
+async def process_csv_background_async(file_path: str, original_filename: str, data_type: str):
+    """异步后台处理CSV文件 - 独立数据库会话"""
     with SessionFactory() as db:
         try:
             upload_service = OptimizedUploadService(db)
-            success, message, batch_record = upload_service.process_csv_file(
+            success, message, batch_record = await upload_service.process_csv_file(
                 file_path, original_filename, data_type
             )
             if success:
@@ -39,6 +40,25 @@ def process_csv_background(file_path: str, original_filename: str, data_type: st
             # 清理文件
             if os.path.exists(file_path):
                 os.unlink(file_path)
+
+
+def process_csv_background(file_path: str, original_filename: str, data_type: str):
+    """同步包装器 - 在新的事件循环中运行异步函数"""
+    try:
+        # 创建新的事件循环来运行异步函数
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(
+                process_csv_background_async(file_path, original_filename, data_type)
+            )
+        finally:
+            loop.close()
+    except Exception as e:
+        logger.error(f"后台处理包装器异常: {e}")
+        # 确保清理文件
+        if os.path.exists(file_path):
+            os.unlink(file_path)
 
 
 async def _cleanup_chunk_session(session_key: str):
