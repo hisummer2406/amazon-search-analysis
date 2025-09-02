@@ -14,11 +14,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '4.0'
-          memory: 6G
-        reservations:
           cpus: '2.0'
           memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
           
   db:
     image: registry.cn-beijing.aliyuncs.com/ruanjinggang/postgres:alpine
@@ -37,10 +37,10 @@ services:
       resources:
         limits:
           cpus: '2.0'
-          memory: 2G
+          memory: 4G
         reservations:
           cpus: '1.0'
-          memory: 1G
+          memory: 2G
 
   redis:
     image: registry.cn-beijing.aliyuncs.com/ruanjinggang/redis:5
@@ -55,3 +55,8 @@ services:
 
 volumes:
   postgres_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/lib/postgresql/data  # 确保数据持久化

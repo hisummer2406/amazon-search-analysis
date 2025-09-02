@@ -23,6 +23,7 @@ engine = create_engine(
     max_overflow=settings.DB_MAX_OVERFLOW,
     pool_timeout=settings.DB_POOL_TIMEOUT,
     pool_recycle=settings.DB_POOL_RECYCLE,
+    pool_pre_ping=settings.DB_POOL_PRE_PING,
     echo=settings.DEBUG,
 )
 
@@ -30,7 +31,7 @@ engine = create_engine(
 SessionFactory = sessionmaker(
     bind=engine,
     expire_on_commit=False,
-    autoflush=True,
+    autoflush=False,
     autocommit=False,
 )
 
@@ -41,6 +42,7 @@ async_engine = create_async_engine(
     max_overflow=settings.DB_MAX_OVERFLOW,
     pool_timeout=settings.DB_POOL_TIMEOUT,
     pool_recycle=settings.DB_POOL_RECYCLE,
+    pool_pre_ping=settings.DB_POOL_PRE_PING,
     echo=settings.DEBUG,
 )
 
@@ -50,8 +52,6 @@ AsyncSessionFactory = async_sessionmaker(
     class_=AsyncSession,
     expire_on_commit=False,
 )
-
-"""依赖注入函数"""
 
 
 # 获取同步数据库会话
