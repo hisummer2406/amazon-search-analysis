@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 
+
 class Settings(BaseSettings):
     # 应用配置
     APP_NAME: str
@@ -21,7 +22,7 @@ class Settings(BaseSettings):
     MAX_FILE_SIZE: int = 3 * 1024 * 1024 * 1024  # 3GB for large files
 
     # 批处理配置
-    BATCH_SIZE: int = 2000
+    BATCH_SIZE: int = 10000
 
     # Admin配置密钥：
     # python -c "import secrets; print(secrets.token_urlsafe(32))"
@@ -29,8 +30,8 @@ class Settings(BaseSettings):
 
     # 多核处理配置
     MAX_WORKERS: int = 4  # 最大工作进程数
-    MULTIPROCESSING_THRESHOLD_GB: float = 1.0  # 使用多进程的文件大小阈值(GB)
-    MULTITHREADING_THRESHOLD_MB: float = 100.0  # 使用多线程的文件大小阈值(MB)
+    MULTIPROCESSING_THRESHOLD_MB: float = 100.0  # 使用多进程的文件大小阈值(MB)
+    FILE_SPLIT_LINES: int = 50000  # 文件分块行数
 
     # 数据库连接优化配置
     DB_POOL_SIZE: int = 50  # 连接池大小

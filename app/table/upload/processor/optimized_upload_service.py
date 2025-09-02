@@ -53,7 +53,7 @@ class OptimizedUploadService(UploadService):
     def __init__(self, db: Session):
         super().__init__(db)
         self.max_workers = min(settings.MAX_WORKERS, os.cpu_count())
-        self.multiprocess_threshold = 500 * 1024 * 1024  # 500MB阈值
+        self.multiprocess_threshold = settings.MULTIPROCESSING_THRESHOLD_MB * 1024 * 1024  # 500MB阈值
 
     async def process_csv_file(
             self, file_path: str, original_filename: str, data_type: str
@@ -62,12 +62,12 @@ class OptimizedUploadService(UploadService):
         file_size = os.path.getsize(file_path)
         file_size_mb = file_size / (1024 * 1024)
 
-        logger.info(f"文件大小: {file_size_mb:.1f}MB")
-
         if file_size >= self.multiprocess_threshold:
+            logger.info(f"文件名：{original_filename}, 文件大小: {file_size_mb:.1f}MB, 多进程处理")
             # 大文件：多进程处理
             return await self._process_with_multiprocessing(file_path, original_filename, data_type)
         else:
+            logger.info(f"文件名：{original_filename}, 文件大小: {file_size_mb:.1f}MB, 单线程处理")
             # 小文件：单线程去重处理
             return await super().process_csv_file(file_path, original_filename, data_type)
 
@@ -93,7 +93,7 @@ class OptimizedUploadService(UploadService):
 
             # 2. 文件分片
             temp_dir = tempfile.mkdtemp(prefix="upload_")
-            chunk_files = await self._split_file_by_lines(file_path, temp_dir, 50000)
+            chunk_files = await self._split_file_by_lines(file_path, temp_dir, settings.FILE_SPLIT_LINES)
             logger.info(f"分片完成: {len(chunk_files)} 个文件")
 
             # 3. 并行处理

@@ -58,6 +58,7 @@ async def lifespan(app: FastAPI):
     logger.info(f"📊 数据库Schema: {settings.DATABASE_SCHEMA}")
     logger.info(f"📁 上传目录: {settings.UPLOAD_DIR}")
     logger.info(f"⚙️ 批处理大小: {settings.BATCH_SIZE}")
+    logger.info(f"📁 文件分块行数: {settings.FILE_SPLIT_LINES}")
 
     # 初始化上传目录
     init_upload_dir()
