@@ -1,4 +1,4 @@
-# app/services/csv_processor.py - 完整版本：保留原功能+去重逻辑
+# app/table/upload/csv_processor.py - 简化版：保留大文件处理核心功能
 import logging
 import pandas as pd
 from typing import Iterator, Dict, Any, List
@@ -11,13 +11,13 @@ logger = logging.getLogger(__name__)
 
 
 class CSVProcessor:
-    """CSV文件处理工具类 - 专为大文件优化 + 去重逻辑"""
+    """CSV文件处理工具类 - 专为超大文件优化"""
 
     def __init__(self, batch_size: int = 5000):
         self.batch_size = batch_size
 
     def read_csv_chunks(self, file_path: str) -> Iterator[pd.DataFrame]:
-        """分块读取大CSV文件 - 保留原逻辑"""
+        """分块读取大CSV文件"""
         try:
             # 先读取表头信息
             with open(file_path, 'r', encoding='utf-8') as f:
@@ -61,88 +61,6 @@ class CSVProcessor:
             logger.error(f"分块读取CSV文件失败: {e}")
             raise
 
-    def convert_chunk_to_records(
-            self,
-            df: pd.DataFrame,
-            report_date: date,
-            data_type: str
-    ) -> List[Dict[str, Any]]:
-        """将数据块转换为数据库记录 - 保留原逻辑"""
-        records = []
-        current_time = datetime.now()
-
-        for _, row in df.iterrows():
-            try:
-                # 安全地获取数值，避免NaN
-                def safe_get(col, default=0, dtype=None):
-                    val = row.get(col, default)
-                    if pd.isna(val):
-                        return default
-                    if dtype == int:
-                        return int(float(val)) if val != '' else default
-                    elif dtype == float:
-                        return float(val) if val != '' else default
-                    else:
-                        return str(val).strip() if val != '' else str(default)
-
-                record = {
-                    'keyword': safe_get('keyword', ''),
-
-                    # 排名字段
-                    'current_rangking_day': safe_get('current_rangking_day', 0, int),
-                    'report_date_day': report_date if data_type == 'daily' else report_date,
-                    'previous_rangking_day': 0,
-                    'ranking_change_day': 0,
-                    'ranking_trend_day': [],
-
-                    'current_rangking_week': safe_get('current_rangking_day', 0, int) if data_type == 'weekly' else 0,
-                    'report_date_week': report_date if data_type == 'weekly' else report_date,
-                    'previous_rangking_week': 0,
-                    'ranking_change_week': 0,
-
-                    # Top产品信息
-                    'top_brand': safe_get('top_brand', ''),
-                    'top_category': safe_get('top_category', ''),
-                    'top_product_asin': safe_get('top_product_asin', ''),
-                    'top_product_title': safe_get('top_product_title', ''),
-                    'top_product_click_share': safe_get('top_product_click_share', 0.0, float),
-                    'top_product_conversion_share': safe_get('top_product_conversion_share', 0.0, float),
-
-                    # 第二名产品信息
-                    'brand_2nd': safe_get('brand_2nd', ''),
-                    'category_2nd': safe_get('category_2nd', ''),
-                    'product_asin_2nd': safe_get('product_asin_2nd', ''),
-                    'product_title_2nd': safe_get('product_title_2nd', ''),
-                    'product_click_share_2nd': safe_get('product_click_share_2nd', 0.0, float),
-                    'product_conversion_share_2nd': safe_get('product_conversion_share_2nd', 0.0, float),
-
-                    # 第三名产品信息
-                    'brand_3rd': safe_get('brand_3rd', ''),
-                    'category_3rd': safe_get('category_3rd', ''),
-                    'product_asin_3rd': safe_get('product_asin_3rd', ''),
-                    'product_title_3rd': safe_get('product_title_3rd', ''),
-                    'product_click_share_3rd': safe_get('product_click_share_3rd', 0.0, float),
-                    'product_conversion_share_3rd': safe_get('product_conversion_share_3rd', 0.0, float),
-
-                    # 状态标识
-                    'is_new_day': data_type == 'daily',
-                    'is_new_week': data_type == 'weekly',
-
-                    # 时间戳
-                    'created_at': current_time,
-                    'updated_at': current_time
-                }
-
-                # 只添加有效记录（有关键词的）
-                if record['keyword'].strip():
-                    records.append(record)
-
-            except Exception as e:
-                logger.warning(f"转换记录失败，跳过该行: {e}")
-                continue
-
-        return records
-
     def process_chunk_with_upsert(
             self,
             df: pd.DataFrame,
@@ -150,7 +68,7 @@ class CSVProcessor:
             data_type: str,
             db_session: Session
     ) -> int:
-        """处理数据块并执行去重更新逻辑 - 新增功能"""
+        """处理数据块并执行去重更新逻辑"""
         processed_count = 0
 
         for _, row in df.iterrows():
@@ -171,7 +89,6 @@ class CSVProcessor:
                     # 更新逻辑
                     if self._should_skip_update(existing_record, report_date, data_type):
                         continue
-
                     self._update_existing_record(existing_record, row, report_date, data_type, current_ranking)
                 else:
                     # 插入新记录
@@ -210,25 +127,18 @@ class CSVProcessor:
         now = datetime.now()
 
         if data_type == 'daily':
-            # 保存历史数据到previous字段
             record.previous_rangking_day = record.current_rangking_day
             record.current_rangking_day = current_ranking
             record.ranking_change_day = current_ranking - record.previous_rangking_day
             record.report_date_day = report_date
             record.is_new_day = False
-
-            # 更新7期趋势数据 - 包含本周期数据
             self._update_trend_data(record, report_date, current_ranking)
-
         else:  # weekly
             record.previous_rangking_week = record.current_rangking_week
             record.current_rangking_week = current_ranking
             record.ranking_change_week = current_ranking - record.previous_rangking_week
             record.report_date_week = report_date
             record.is_new_week = False
-
-            # 周数据也可能需要趋势图，如果需要可以添加类似逻辑
-            # self._update_trend_data_weekly(record, report_date, current_ranking)
 
         # 更新商品信息
         self._update_product_info(record, row)
@@ -256,9 +166,7 @@ class CSVProcessor:
             record.previous_rangking_day = 0
             record.ranking_change_day = 0
             record.is_new_day = True
-            # 新记录也写入本周期趋势数据
             record.ranking_trend_day = [{"date": report_date.isoformat(), "ranking": current_ranking}]
-
             # 周数据设置默认值
             record.current_rangking_week = 0
             record.report_date_week = report_date
@@ -271,28 +179,24 @@ class CSVProcessor:
             record.previous_rangking_week = 0
             record.ranking_change_week = 0
             record.is_new_week = True
-
             # 日数据设置默认值
             record.current_rangking_day = 0
             record.report_date_day = report_date
             record.previous_rangking_day = 0
             record.ranking_change_day = 0
             record.is_new_day = False
-            # 周数据新记录暂时不设置趋势图，或者可以设置周趋势
             record.ranking_trend_day = []
 
         self._update_product_info(record, row)
         return record
 
     def _update_trend_data(self, record: AmazonOriginSearchData, report_date: date, ranking: int):
-        """更新7天趋势数据，格式: [{"date": "2025-08-10", "ranking": 85}, {"date": "2025-08-11", "ranking": 73}]"""
+        """更新7天趋势数据"""
         trends = record.ranking_trend_day or []
         current_date_str = report_date.isoformat()
 
         # 使用字典去重，相同日期只保留最新数据
         trend_dict = {}
-
-        # 保留现有数据
         for trend in trends:
             if isinstance(trend, dict) and "date" in trend and "ranking" in trend:
                 trend_dict[trend["date"]] = int(trend["ranking"])
@@ -306,7 +210,6 @@ class CSVProcessor:
 
     def _update_product_info(self, record: AmazonOriginSearchData, row: pd.Series):
         """更新商品信息"""
-
         def safe_get(col, default='', dtype=str):
             val = row.get(col, default)
             if pd.isna(val) or val == '':
@@ -341,7 +244,7 @@ class CSVProcessor:
         record.product_conversion_share_3rd = safe_get('product_conversion_share_3rd', 0.0, float)
 
     def get_file_info(self, file_path: str) -> Dict[str, Any]:
-        """获取CSV文件信息 - 保留原逻辑"""
+        """获取CSV文件信息"""
         try:
             file_size = Path(file_path).stat().st_size
 
@@ -350,7 +253,6 @@ class CSVProcessor:
                 # 跳过前两行
                 f.readline()
                 f.readline()
-
                 # 计算数据行数
                 line_count = sum(1 for line in f if line.strip())
 
@@ -371,7 +273,7 @@ class CSVProcessor:
             }
 
     def _create_column_mapping(self, header_count: int) -> Dict[str, str]:
-        """创建列名映射 - 保留原逻辑"""
+        """创建列名映射"""
         standard_columns = [
             'current_rangking_day',  # 搜索频率排名
             'keyword',  # 搜索词
@@ -403,7 +305,7 @@ class CSVProcessor:
         return mapping
 
     def _clean_chunk_data(self, df: pd.DataFrame) -> pd.DataFrame:
-        """清理数据块 - 保留原逻辑"""
+        """清理数据块"""
         try:
             # 填充空值
             df = df.fillna('')
@@ -438,61 +340,32 @@ class CSVProcessor:
             raise
 
 
-class FileValidator:
-    """文件验证工具 - 保留原逻辑"""
+def validate_csv_structure(file_path: str) -> tuple[bool, str]:
+    """验证CSV文件结构"""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
 
-    @staticmethod
-    def validate_csv_structure(file_path: str) -> tuple[bool, str]:
-        """验证CSV文件结构"""
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                lines = f.readlines()
+        if len(lines) < 3:
+            return False, "文件行数不足，至少需要3行（元数据、表头、数据）"
 
-            if len(lines) < 3:
-                return False, "文件行数不足，至少需要3行（元数据、表头、数据）"
+        # 检查第一行是否包含元数据
+        first_line = lines[0].strip()
+        if '报告范围' not in first_line:
+            return False, "第一行应包含报告范围元数据"
 
-            # 检查第一行是否包含元数据
-            first_line = lines[0].strip()
-            if '报告范围' not in first_line:
-                return False, "第一行应包含报告范围元数据"
+        # 检查第二行是否是表头
+        second_line = lines[1].strip()
+        if '搜索频率排名' not in second_line or '搜索词' not in second_line:
+            return False, "第二行应为表头，包含'搜索频率排名'和'搜索词'"
 
-            # 检查第二行是否是表头
-            second_line = lines[1].strip()
-            if '搜索频率排名' not in second_line or '搜索词' not in second_line:
-                return False, "第二行应为表头，包含'搜索频率排名'和'搜索词'"
+        # 检查第三行是否有数据
+        if len(lines) > 2:
+            third_line = lines[2].strip()
+            if not third_line or len(third_line.split(',')) < 3:
+                return False, "第三行应包含实际数据"
 
-            # 检查第三行是否有数据
-            if len(lines) > 2:
-                third_line = lines[2].strip()
-                if not third_line or len(third_line.split(',')) < 3:
-                    return False, "第三行应包含实际数据"
+        return True, "文件结构验证通过"
 
-            return True, "文件结构验证通过"
-
-        except Exception as e:
-            return False, f"文件验证失败: {str(e)}"
-
-    @staticmethod
-    def extract_file_metadata(file_path: str) -> Dict[str, Any]:
-        """提取文件元数据"""
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                first_line = f.readline().strip()
-
-            metadata = {}
-
-            # 提取报告范围
-            if '报告范围=' in first_line:
-                range_match = first_line.split('报告范围=')[1].split(',')[0]
-                metadata['report_range'] = range_match.strip('[]"')
-
-            # 提取选择日期
-            if '选择日期=' in first_line:
-                date_match = first_line.split('选择日期=')[1].split(',')[0]
-                metadata['selected_date'] = date_match.strip('[]"')
-
-            return metadata
-
-        except Exception as e:
-            logger.error(f"提取文件元数据失败: {e}")
-            return {}
+    except Exception as e:
+        return False, f"文件验证失败: {str(e)}"

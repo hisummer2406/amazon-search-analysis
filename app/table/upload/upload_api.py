@@ -1,4 +1,3 @@
-# app/api/upload_api.py - 修复异步调用问题
 import logging
 import os
 import uuid
@@ -12,7 +11,7 @@ from pathlib import Path
 
 from app.table.upload.upload_schemas import ChunkStartRequest, FinishChunkRequest
 from database import SessionFactory
-from app.table.upload.processor.optimized_upload_service import OptimizedUploadService
+from app.table.upload.upload_service import UploadService
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -26,7 +25,7 @@ async def process_csv_background_async(file_path: str, original_filename: str, d
     """异步后台处理CSV文件 - 独立数据库会话"""
     with SessionFactory() as db:
         try:
-            upload_service = OptimizedUploadService(db)
+            upload_service = UploadService(db)
             success, message, batch_record = await upload_service.process_csv_file(
                 file_path, original_filename, data_type
             )
