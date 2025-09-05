@@ -169,22 +169,36 @@ class UploadService:
 
             # 5. 更新状态
             processing_time = int((datetime.now() - start_time).total_seconds())
-            batch_record.processed_keywords = total_processed
-            batch_record.total_records = total_processed
-            batch_record.processing_seconds = processing_time
 
-            if failed_count == 0:
-                batch_record.status = StatusEnum.COMPLETED
-                batch_record.completed_at = datetime.now()
-                message = f"多进程处理完成: {total_processed} 条记录, {processing_time}秒"
-                success = True
-            else:
-                batch_record.status = StatusEnum.FAILED
-                batch_record.error_message = f"{failed_count} 个分片失败"
-                message = f"部分失败: 成功 {total_processed} 条, {failed_count} 个分片失败"
-                success = False
+            try:
+                self.db.rollback()  # 先清理当前会话
+            except:
+                pass
 
-            self.db.commit()
+            # 使用新会话更新最终状态
+            from database import SessionFactory
+            with SessionFactory() as fresh_db:
+                fresh_record = fresh_db.query(ImportBatchRecords).filter(
+                    ImportBatchRecords.id == batch_record.id
+                ).first()
+                if fresh_record:
+                    fresh_record.processed_keywords = total_processed
+                    fresh_record.total_records = total_processed
+                    fresh_record.processing_seconds = processing_time
+
+                    if failed_count == 0:
+                        fresh_record.status = StatusEnum.COMPLETED
+                        fresh_record.completed_at = datetime.now()
+                        message = f"多进程处理完成: {total_processed} 条记录, {processing_time}秒"
+                        success = True
+                    else:
+                        fresh_record.status = StatusEnum.FAILED
+                        fresh_record.error_message = f"{failed_count} 个分片失败"
+                        message = f"部分失败: 成功 {total_processed} 条, {failed_count} 个分片失败"
+                        success = False
+
+                    fresh_db.commit()
+
             return success, message, batch_record
 
         except Exception as e:
@@ -284,16 +298,26 @@ class UploadService:
         return chunk_files
 
     async def _monitor_progress(self, batch_record: ImportBatchRecords, start_time: datetime):
-        """监控处理进度"""
+        """监控处理进度 - 修复会话冲突"""
         try:
             while batch_record.status == StatusEnum.PROCESSING:
                 await asyncio.sleep(10)
                 processing_seconds = int((datetime.now() - start_time).total_seconds())
-                batch_record.processing_seconds = processing_seconds
+
+                # 使用新的数据库会话更新进度
                 try:
-                    self.db.commit()
-                except:
-                    pass
+                    from database import SessionFactory
+                    with SessionFactory() as fresh_db:
+                        # 重新查询记录并更新
+                        fresh_record = fresh_db.query(ImportBatchRecords).filter(
+                            ImportBatchRecords.id == batch_record.id
+                        ).first()
+                        if fresh_record and fresh_record.status == StatusEnum.PROCESSING:
+                            fresh_record.processing_seconds = processing_seconds
+                            fresh_db.commit()
+                except Exception as e:
+                    logger.warning(f"更新进度失败: {e}")
+
         except asyncio.CancelledError:
             pass
         except Exception as e:
@@ -354,17 +378,31 @@ class UploadService:
             raise
 
     def _update_batch_record_error(self, batch_record: ImportBatchRecords, error_message: str):
-        """更新批次记录错误状态"""
+        """更新批次记录错误状态 - 修复会话冲突"""
         try:
-            batch_record.status = StatusEnum.FAILED
-            batch_record.error_message = error_message
-            batch_record.completed_at = datetime.now()
+            # 先回滚当前会话的问题
+            try:
+                self.db.rollback()
+            except:
+                pass
 
-            if batch_record.created_at:
-                batch_record.processing_seconds = int(
-                    (batch_record.completed_at - batch_record.created_at.replace(tzinfo=None)).total_seconds())
+            # 使用新的数据库会话更新错误状态
+            from database import SessionFactory
+            with SessionFactory() as fresh_db:
+                fresh_record = fresh_db.query(ImportBatchRecords).filter(
+                    ImportBatchRecords.id == batch_record.id
+                ).first()
+                if fresh_record:
+                    fresh_record.status = StatusEnum.FAILED
+                    fresh_record.error_message = error_message
+                    fresh_record.completed_at = datetime.now()
 
-            self.db.commit()
-            logger.error(f"更新批次记录错误状态: {error_message}")
+                    if fresh_record.created_at:
+                        fresh_record.processing_seconds = int(
+                            (fresh_record.completed_at - fresh_record.created_at.replace(tzinfo=None)).total_seconds())
+
+                    fresh_db.commit()
+                    logger.info(f"已更新批次记录错误状态: {error_message}")
+
         except Exception as e:
             logger.error(f"更新批次记录错误状态失败: {e}")
