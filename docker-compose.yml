@@ -8,31 +8,9 @@ services:
       - "8000:8000"
     volumes:
       - /var/www/amazon-search-analysis:/app
-    depends_on:
-      - db
-      - redis
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 4G
-        reservations:
-          cpus: '1.0'
-          memory: 2G
-          
-  db:
-    image: registry.cn-beijing.aliyuncs.com/ruanjinggang/postgres:alpine
     environment:
-      POSTGRES_DB: amazon_search
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: pwd123
-      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=C --lc-ctype=C"
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./etc/postgresql.conf:/etc/postgresql.conf
-    command: postgres -c config_file=/etc/postgresql.conf
+      # 可以通过环境变量覆盖.env配置
+      - TZ=Asia/Shanghai
     deploy:
       resources:
         limits:
@@ -41,22 +19,6 @@ services:
         reservations:
           cpus: '1.0'
           memory: 2G
+    restart: unless-stopped
 
-  redis:
-    image: registry.cn-beijing.aliyuncs.com/ruanjinggang/redis:5
-    ports:
-      - "6379:6379"
-    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-
-volumes:
-  postgres_data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /var/lib/postgresql/data  # 确保数据持久化
+volumes: {}

@@ -14,9 +14,6 @@ class Settings(BaseSettings):
     # 数据库Schema
     DATABASE_SCHEMA: str
 
-    # Redis配置（用于异步任务）
-    REDIS_URL: str
-
     # 文件上传配置
     UPLOAD_DIR: str = "uploads"
     MAX_FILE_SIZE: int = 3 * 1024 * 1024 * 1024  # 3GB for large files
