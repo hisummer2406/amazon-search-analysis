@@ -108,7 +108,7 @@ class CSVProcessor:
             return 0
 
         # 进一步减小批次处理大小
-        mini_batch_size = 100
+        mini_batch_size = settings.MINIBATCH_SIZE
         total_processed = 0
 
         try:
