@@ -69,12 +69,11 @@ class CSVProcessor:
             data_type: str,
             db_session: Session
     ) -> int:
-        """使用PostgreSQL UPSERT批量处理数据块"""
+        """使用PostgreSQL UPSERT批量处理数据块 - 修复连接同步问题"""
         if len(df) == 0:
             return 0
 
         try:
-            # 准备批量数据
             batch_data = []
             now = datetime.now()
 
@@ -91,33 +90,59 @@ class CSVProcessor:
             if not batch_data:
                 return 0
 
-            # 执行批量UPSERT - 逐条执行以避免批量绑定问题
             upsert_sql = self._build_upsert_sql(data_type)
             processed_count = 0
 
             for data in batch_data:
-                try:
-                    # 检查事务状态，如果中止则重新开始
-                    if not db_session.is_active:
-                        db_session.rollback()
-                        db_session.begin()
+                max_retries = 3
+                retry_count = 0
 
-                    db_session.execute(text(upsert_sql), data)
-                    processed_count += 1
-                except Exception as e:
-                    logger.warning(f"单条记录UPSERT失败: {data.get('keyword', 'N/A')}, 错误: {e}")
-                    # 发生错误时回滚当前事务
-                    db_session.rollback()
-                    db_session.begin()  # 开始新的事务
-                    continue
+                while retry_count < max_retries:
+                    try:
+                        # 检查连接状态
+                        if not db_session.is_active or db_session.in_transaction():
+                            db_session.rollback()
 
-            db_session.commit()
+                        # 测试连接
+                        db_session.execute(text("SELECT 1"))
+
+                        # 执行UPSERT
+                        db_session.execute(text(upsert_sql), data)
+                        db_session.commit()
+                        processed_count += 1
+                        break
+
+                    except Exception as e:
+                        retry_count += 1
+                        logger.warning(
+                            f"UPSERT失败 (尝试 {retry_count}/{max_retries}): {data.get('keyword', 'N/A')}, 错误: {e}")
+
+                        try:
+                            db_session.rollback()
+                        except:
+                            pass
+
+                        if retry_count >= max_retries:
+                            # 最后尝试：重新创建会话
+                            try:
+                                db_session.close()
+                                # 这里需要重新获取session，但在当前架构下比较困难
+                                # 建议记录失败并继续处理其他记录
+                                logger.error(f"记录处理彻底失败: {data.get('keyword', 'N/A')}")
+                            except:
+                                pass
+                        else:
+                            import time
+                            time.sleep(1)  # 重试前等待1秒
+
             return processed_count
 
         except Exception as e:
-            db_session.rollback()
-            logger.error(f"UPSERT处理失败: {e}")
-            logger.error(f"错误详情: {str(e)}")
+            logger.error(f"批量UPSERT处理失败: {e}")
+            try:
+                db_session.rollback()
+            except:
+                pass
             raise
 
     def _build_upsert_sql(self, data_type: str) -> str:
