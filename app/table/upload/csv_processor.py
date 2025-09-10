@@ -48,7 +48,7 @@ class CSVProcessor:
 
     def __init__(self, batch_size: int = settings.BATCH_SIZE):
         self.batch_size = batch_size
-        self.max_retries = 3
+        self.max_retries = 2
         self.retry_delay = 1
 
     def read_csv_chunks(self, file_path: str) -> Iterator[pd.DataFrame]:
@@ -143,9 +143,6 @@ class CSVProcessor:
         """带重试机制的小批次处理"""
         for attempt in range(self.max_retries):
             try:
-                # 检查连接状态
-                self._ensure_connection_alive(db_session)
-
                 batch_data = []
                 now = datetime.now()
 
@@ -164,34 +161,32 @@ class CSVProcessor:
 
                 # 执行批量UPSERT
                 upsert_sql = self._build_upsert_sql(data_type)
-                processed_count = 0
 
-                for data in batch_data:
-                    try:
-                        db_session.execute(text(upsert_sql), data)
-                        processed_count += 1
-                    except (OperationalError, DisconnectionError) as e:
-                        logger.warning(f"连接错误，尝试重建连接: {e}")
+                try:
+                    # 使用 executemany 进行真正的批处理
+                    db_session.execute(text(upsert_sql), batch_data)
+                    return len(batch_data)
+                except (OperationalError, DisconnectionError, psycopg2.OperationalError) as e:
+                    logger.warning(f"连接错误，尝试重建连接并重试: {e}")
+                    if attempt < self.max_retries - 1:
                         self._rebuild_connection(db_session)
-                        # 重新执行当前记录
-                        db_session.execute(text(upsert_sql), data)
-                        processed_count += 1
-                    except Exception as e:
-                        logger.warning(f"单条记录处理失败: {data.get('keyword', 'N/A')}, 错误: {e}")
+                        time.sleep(self.retry_delay * (attempt + 1))
                         continue
+                    else:
+                        logger.error(f"批处理失败，跳过本批次: {e}")
+                        return 0
+                except Exception as e:
+                    logger.error(f"批处理失败，跳过本批次: {e}")
+                    return 0
 
-                return processed_count
-
-            except (OperationalError, DisconnectionError, psycopg2.OperationalError) as e:
-                logger.warning(f"连接断开，第{attempt + 1}次重试: {e}")
+            except Exception as e:
+                logger.error(f"处理失败: {e}")
                 if attempt < self.max_retries - 1:
                     time.sleep(self.retry_delay * (attempt + 1))
                     self._rebuild_connection(db_session)
                 else:
-                    raise
-            except Exception as e:
-                logger.error(f"处理失败: {e}")
-                raise
+                    logger.error(f"处理失败，跳过本批次: {e}")
+                    return 0
 
         return 0
 
@@ -530,15 +525,6 @@ class CSVProcessor:
         except Exception as e:
             logger.error(f"清理数据块失败: {e}")
             raise
-
-    def _ensure_connection_alive(self, db_session: Session):
-        """确保数据库连接存活"""
-        try:
-            # 简单查询测试连接
-            db_session.execute(text("SELECT 1"))
-        except (OperationalError, DisconnectionError, psycopg2.OperationalError):
-            logger.info("检测到连接断开，重建连接")
-            self._rebuild_connection(db_session)
 
     def _rebuild_connection(self, db_session: Session):
         """重建数据库连接"""
