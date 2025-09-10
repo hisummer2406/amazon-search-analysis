@@ -1,4 +1,3 @@
-# app/table/upload/upload_service.py - 简化版：保留超大文件多进程处理
 import asyncio
 import logging
 import os
@@ -300,26 +299,32 @@ class UploadService:
     async def _monitor_progress(self, batch_record: ImportBatchRecords, start_time: datetime):
         """监控处理进度"""
         try:
-            while batch_record.status == StatusEnum.PROCESSING:
+            while True:
                 await asyncio.sleep(10)
-                processing_seconds = int((datetime.now() - start_time).total_seconds())
 
-                # 使用新的数据库会话更新进度
+                # 检查批次记录是否还在处理中
                 try:
                     from database import SessionFactory
                     with SessionFactory() as fresh_db:
-                        # 重新查询记录并更新
                         fresh_record = fresh_db.query(ImportBatchRecords).filter(
                             ImportBatchRecords.id == batch_record.id
                         ).first()
-                        if fresh_record and fresh_record.status == StatusEnum.PROCESSING:
-                            fresh_record.processing_seconds = processing_seconds
-                            fresh_db.commit()
+
+                        if not fresh_record or fresh_record.status != StatusEnum.PROCESSING:
+                            break
+
+                        # 只更新处理时间，不执行其他可能返回结果的查询
+                        processing_seconds = int((datetime.now() - start_time).total_seconds())
+                        fresh_record.processing_seconds = processing_seconds
+                        fresh_db.commit()
+
                 except Exception as e:
                     logger.warning(f"更新进度失败: {e}")
+                    # 简单的等待而不是复杂的重试逻辑
+                    await asyncio.sleep(5)
 
         except asyncio.CancelledError:
-            pass
+            logger.info("进度监控任务被取消")
         except Exception as e:
             logger.warning(f"进度监控异常: {e}")
 
@@ -394,7 +399,7 @@ class UploadService:
                 ).first()
                 if fresh_record:
                     fresh_record.status = StatusEnum.FAILED
-                    fresh_record.error_message = error_message
+                    fresh_record.error_message = error_message[:500]  # 限制错误消息长度
                     fresh_record.completed_at = datetime.now()
 
                     if fresh_record.created_at:
@@ -402,7 +407,7 @@ class UploadService:
                             (fresh_record.completed_at - fresh_record.created_at.replace(tzinfo=None)).total_seconds())
 
                     fresh_db.commit()
-                    logger.info(f"已更新批次记录错误状态: {error_message}")
+                    logger.info(f"已更新批次记录错误状态: {error_message[:100]}...")
 
         except Exception as e:
             logger.error(f"更新批次记录错误状态失败: {e}")
