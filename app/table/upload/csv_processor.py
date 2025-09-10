@@ -1,21 +1,55 @@
 # app/table/upload/csv_processor.py - 优化版：使用 INSERT ... ON CONFLICT DO UPDATE
 import logging
+import time
 import pandas as pd
 from typing import Iterator, Dict, Any, List
 from pathlib import Path
 from datetime import datetime, date
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from app.table.analysis.analysis_model import AmazonOriginSearchData
+from config import settings
+from sqlalchemy.exc import OperationalError, DisconnectionError
+import psycopg2
 
 logger = logging.getLogger(__name__)
 
+def validate_csv_structure(file_path: str) -> tuple[bool, str]:
+    """验证CSV文件结构"""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+
+        if len(lines) < 3:
+            return False, "文件行数不足，至少需要3行（元数据、表头、数据）"
+
+        # 检查第一行是否包含元数据
+        first_line = lines[0].strip()
+        if '报告范围' not in first_line:
+            return False, "第一行应包含报告范围元数据"
+
+        # 检查第二行是否是表头
+        second_line = lines[1].strip()
+        if '搜索频率排名' not in second_line or '搜索词' not in second_line:
+            return False, "第二行应为表头，包含'搜索频率排名'和'搜索词'"
+
+        # 检查第三行是否有数据
+        if len(lines) > 2:
+            third_line = lines[2].strip()
+            if not third_line or len(third_line.split(',')) < 3:
+                return False, "第三行应包含实际数据"
+
+        return True, "文件结构验证通过"
+
+    except Exception as e:
+        return False, f"文件验证失败: {str(e)}"
 
 class CSVProcessor:
     """CSV文件处理工具类 - 使用PostgreSQL UPSERT优化"""
 
-    def __init__(self, batch_size: int = 5000):
+    def __init__(self, batch_size: int = settings.BATCH_SIZE):
         self.batch_size = batch_size
+        self.max_retries = 3
+        self.retry_delay = 1
 
     def read_csv_chunks(self, file_path: str) -> Iterator[pd.DataFrame]:
         """分块读取大CSV文件"""
@@ -69,81 +103,97 @@ class CSVProcessor:
             data_type: str,
             db_session: Session
     ) -> int:
-        """使用PostgreSQL UPSERT批量处理数据块 - 修复连接同步问题"""
+        """使用连接重试机制的批量处理"""
         if len(df) == 0:
             return 0
 
+        # 进一步减小批次处理大小
+        mini_batch_size = 100
+        total_processed = 0
+
         try:
-            batch_data = []
-            now = datetime.now()
+            # 分小批次处理
+            for i in range(0, len(df), mini_batch_size):
+                mini_batch = df.iloc[i:i + mini_batch_size]
+                processed = self._process_mini_batch_with_retry(
+                    mini_batch, report_date, data_type, db_session
+                )
+                total_processed += processed
 
-            for _, row in df.iterrows():
-                keyword = str(row.get('keyword', '')).strip()
-                if not keyword:
-                    continue
+                # 每处理几个小批次就提交一次，避免长时间持有连接
+                if (i // mini_batch_size + 1) % 5 == 0:
+                    self._safe_commit(db_session)
 
-                current_ranking = int(float(row.get('current_rangking_day', 0))) if row.get(
-                    'current_rangking_day') else 0
-                record_data = self._prepare_record_data(row, report_date, data_type, current_ranking, now)
-                batch_data.append(record_data)
-
-            if not batch_data:
-                return 0
-
-            upsert_sql = self._build_upsert_sql(data_type)
-            processed_count = 0
-
-            for data in batch_data:
-                max_retries = 3
-                retry_count = 0
-
-                while retry_count < max_retries:
-                    try:
-                        # 检查连接状态
-                        if not db_session.is_active or db_session.in_transaction():
-                            db_session.rollback()
-
-                        # 测试连接
-                        db_session.execute(text("SELECT 1"))
-
-                        # 执行UPSERT
-                        db_session.execute(text(upsert_sql), data)
-                        db_session.commit()
-                        processed_count += 1
-                        break
-
-                    except Exception as e:
-                        retry_count += 1
-                        logger.warning(
-                            f"UPSERT失败 (尝试 {retry_count}/{max_retries}): {data.get('keyword', 'N/A')}, 错误: {e}")
-
-                        try:
-                            db_session.rollback()
-                        except:
-                            pass
-
-                        if retry_count >= max_retries:
-                            # 最后尝试：重新创建会话
-                            try:
-                                db_session.close()
-                                # 这里需要重新获取session，但在当前架构下比较困难
-                                # 建议记录失败并继续处理其他记录
-                                logger.error(f"记录处理彻底失败: {data.get('keyword', 'N/A')}")
-                            except:
-                                pass
-                        else:
-                            import time
-                            time.sleep(1)  # 重试前等待1秒
-
-            return processed_count
+            # 最终提交
+            self._safe_commit(db_session)
+            return total_processed
 
         except Exception as e:
-            logger.error(f"批量UPSERT处理失败: {e}")
-            try:
-                db_session.rollback()
-            except:
-                pass
+            logger.error(f"批量处理失败: {e}")
+            self._safe_rollback(db_session)
             raise
+
+    def _process_mini_batch_with_retry(
+            self,
+            df: pd.DataFrame,
+            report_date: date,
+            data_type: str,
+            db_session: Session
+    ) -> int:
+        """带重试机制的小批次处理"""
+        for attempt in range(self.max_retries):
+            try:
+                # 检查连接状态
+                self._ensure_connection_alive(db_session)
+
+                batch_data = []
+                now = datetime.now()
+
+                for _, row in df.iterrows():
+                    keyword = str(row.get('keyword', '')).strip()
+                    if not keyword:
+                        continue
+
+                    current_ranking = int(float(row.get('current_rangking_day', 0))) if row.get(
+                        'current_rangking_day') else 0
+                    record_data = self._prepare_record_data(row, report_date, data_type, current_ranking, now)
+                    batch_data.append(record_data)
+
+                if not batch_data:
+                    return 0
+
+                # 执行批量UPSERT
+                upsert_sql = self._build_upsert_sql(data_type)
+                processed_count = 0
+
+                for data in batch_data:
+                    try:
+                        db_session.execute(text(upsert_sql), data)
+                        processed_count += 1
+                    except (OperationalError, DisconnectionError) as e:
+                        logger.warning(f"连接错误，尝试重建连接: {e}")
+                        self._rebuild_connection(db_session)
+                        # 重新执行当前记录
+                        db_session.execute(text(upsert_sql), data)
+                        processed_count += 1
+                    except Exception as e:
+                        logger.warning(f"单条记录处理失败: {data.get('keyword', 'N/A')}, 错误: {e}")
+                        continue
+
+                return processed_count
+
+            except (OperationalError, DisconnectionError, psycopg2.OperationalError) as e:
+                logger.warning(f"连接断开，第{attempt + 1}次重试: {e}")
+                if attempt < self.max_retries - 1:
+                    time.sleep(self.retry_delay * (attempt + 1))
+                    self._rebuild_connection(db_session)
+                else:
+                    raise
+            except Exception as e:
+                logger.error(f"处理失败: {e}")
+                raise
+
+        return 0
 
     def _build_upsert_sql(self, data_type: str) -> str:
         """构建UPSERT SQL语句 - 使用:param格式"""
@@ -414,37 +464,6 @@ class CSVProcessor:
 
         return data
 
-
-    # 保持原有的辅助方法不变
-    def get_file_info(self, file_path: str) -> Dict[str, Any]:
-        """获取CSV文件信息"""
-        try:
-            file_size = Path(file_path).stat().st_size
-
-            # 估算行数（快速方法）
-            with open(file_path, 'r', encoding='utf-8') as f:
-                # 跳过前两行
-                f.readline()
-                f.readline()
-                # 计算数据行数
-                line_count = sum(1 for line in f if line.strip())
-
-            return {
-                'file_size': file_size,
-                'file_size_mb': round(file_size / (1024 * 1024), 2),
-                'estimated_records': line_count,
-                'estimated_chunks': (line_count // self.batch_size) + 1
-            }
-
-        except Exception as e:
-            logger.error(f"获取文件信息失败: {e}")
-            return {
-                'file_size': 0,
-                'file_size_mb': 0,
-                'estimated_records': 0,
-                'estimated_chunks': 0
-            }
-
     def _create_column_mapping(self, header_count: int) -> Dict[str, str]:
         """创建列名映射"""
         standard_columns = [
@@ -512,33 +531,73 @@ class CSVProcessor:
             logger.error(f"清理数据块失败: {e}")
             raise
 
+    def _ensure_connection_alive(self, db_session: Session):
+        """确保数据库连接存活"""
+        try:
+            # 简单查询测试连接
+            db_session.execute(text("SELECT 1"))
+        except (OperationalError, DisconnectionError, psycopg2.OperationalError):
+            logger.info("检测到连接断开，重建连接")
+            self._rebuild_connection(db_session)
 
-def validate_csv_structure(file_path: str) -> tuple[bool, str]:
-    """验证CSV文件结构"""
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
+    def _rebuild_connection(self, db_session: Session):
+        """重建数据库连接"""
+        try:
+            # 回滚当前事务
+            db_session.rollback()
+            # 关闭当前连接
+            db_session.close()
+            # 重新连接会在下次使用时自动建立
+        except Exception as e:
+            logger.warning(f"重建连接时出错: {e}")
 
-        if len(lines) < 3:
-            return False, "文件行数不足，至少需要3行（元数据、表头、数据）"
+    def _safe_commit(self, db_session: Session):
+        """安全提交事务"""
+        max_commit_retries = 3
+        for attempt in range(max_commit_retries):
+            try:
+                db_session.commit()
+                return
+            except (OperationalError, DisconnectionError, psycopg2.OperationalError) as e:
+                logger.warning(f"提交失败，第{attempt + 1}次重试: {e}")
+                if attempt < max_commit_retries - 1:
+                    time.sleep(0.5)
+                    self._rebuild_connection(db_session)
+                else:
+                    raise
 
-        # 检查第一行是否包含元数据
-        first_line = lines[0].strip()
-        if '报告范围' not in first_line:
-            return False, "第一行应包含报告范围元数据"
+    def _safe_rollback(self, db_session: Session):
+        """安全回滚事务"""
+        try:
+            db_session.rollback()
+        except Exception as e:
+            logger.warning(f"回滚失败: {e}")
 
-        # 检查第二行是否是表头
-        second_line = lines[1].strip()
-        if '搜索频率排名' not in second_line or '搜索词' not in second_line:
-            return False, "第二行应为表头，包含'搜索频率排名'和'搜索词'"
+    def get_file_info(self, file_path: str) -> Dict[str, Any]:
+        """获取CSV文件信息"""
+        try:
+            file_size = Path(file_path).stat().st_size
 
-        # 检查第三行是否有数据
-        if len(lines) > 2:
-            third_line = lines[2].strip()
-            if not third_line or len(third_line.split(',')) < 3:
-                return False, "第三行应包含实际数据"
+            # 估算行数（快速方法）
+            with open(file_path, 'r', encoding='utf-8') as f:
+                # 跳过前两行
+                f.readline()
+                f.readline()
+                # 计算数据行数
+                line_count = sum(1 for line in f if line.strip())
 
-        return True, "文件结构验证通过"
+            return {
+                'file_size': file_size,
+                'file_size_mb': round(file_size / (1024 * 1024), 2),
+                'estimated_records': line_count,
+                'estimated_chunks': (line_count // self.batch_size) + 1
+            }
 
-    except Exception as e:
-        return False, f"文件验证失败: {str(e)}"
+        except Exception as e:
+            logger.error(f"获取文件信息失败: {e}")
+            return {
+                'file_size': 0,
+                'file_size_mb': 0,
+                'estimated_records': 0,
+                'estimated_chunks': 0
+            }

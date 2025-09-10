@@ -50,18 +50,18 @@ def _process_chunk_worker(chunk_file: str, report_date_str: str, data_type: str,
 
 
 class UploadService:
-    """CSV文件上传处理服务 - 智能选择单线程或多进程"""
+    """CSV文件上传处理服务"""
 
     def __init__(self, db: Session):
         self.db = db
         self.csv_processor = CSVProcessor(batch_size=settings.BATCH_SIZE)
         self.max_workers = min(settings.MAX_WORKERS, os.cpu_count())
-        self.multiprocess_threshold = settings.MULTIPROCESSING_THRESHOLD_MB * 1024 * 1024  # 默认500MB
+        self.multiprocess_threshold = settings.MULTIPROCESSING_THRESHOLD_MB * 1024 * 1024
 
     async def process_csv_file(
             self, file_path: str, original_filename: str, data_type: str
     ) -> Tuple[bool, str, Optional[ImportBatchRecords]]:
-        """智能选择处理策略：大文件多进程，小文件单线程"""
+        """选择处理策略：大文件多进程，小文件单线程"""
 
         # 1. 验证文件结构
         is_valid, validation_message = validate_csv_structure(file_path)
@@ -262,7 +262,7 @@ class UploadService:
             return False, f"处理失败: {str(e)}"
 
     async def _split_file_by_lines(self, file_path: str, temp_dir: str, lines_per_chunk: int) -> List[str]:
-        """按行数分片文件"""
+        """按行数 分片文件"""
         chunk_files = []
 
         with open(file_path, 'r', encoding='utf-8') as source:
@@ -298,7 +298,7 @@ class UploadService:
         return chunk_files
 
     async def _monitor_progress(self, batch_record: ImportBatchRecords, start_time: datetime):
-        """监控处理进度 - 修复会话冲突"""
+        """监控处理进度"""
         try:
             while batch_record.status == StatusEnum.PROCESSING:
                 await asyncio.sleep(10)
@@ -378,7 +378,7 @@ class UploadService:
             raise
 
     def _update_batch_record_error(self, batch_record: ImportBatchRecords, error_message: str):
-        """更新批次记录错误状态 - 修复会话冲突"""
+        """更新批次记录错误状态"""
         try:
             # 先回滚当前会话的问题
             try:
