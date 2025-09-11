@@ -239,7 +239,7 @@ class UploadService:
                     try:
                         self.db.commit()
                     except Exception as e:
-                        logger.warning(f"更新进度失败: {e}")
+                        logger.warning(f"_process_csv_with_upsert:更新进度失败: {e}")
 
                 # 记录详细进度
                 if chunk_count % 10 == 0:
@@ -313,15 +313,14 @@ class UploadService:
                         if not fresh_record or fresh_record.status != StatusEnum.PROCESSING:
                             break
 
-                        # 只更新处理时间，不执行其他可能返回结果的查询
                         processing_seconds = int((datetime.now() - start_time).total_seconds())
                         fresh_record.processing_seconds = processing_seconds
                         fresh_db.commit()
 
                 except Exception as e:
-                    logger.warning(f"更新进度失败: {e}")
+                    logger.warning(f"_monitor_progress:更新进度失败: {e}")
                     # 简单的等待而不是复杂的重试逻辑
-                    await asyncio.sleep(5)
+                    await asyncio.sleep(30)
 
         except asyncio.CancelledError:
             logger.info("进度监控任务被取消")
