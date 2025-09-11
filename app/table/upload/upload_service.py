@@ -374,7 +374,7 @@ class UploadService:
             self.db.commit()
             self.db.refresh(batch_record)
 
-            logger.info(f"创建导入批次记录: {batch_record.id}")
+            logger.info(f"创建导入批次记录ID: {batch_record.id}")
             return batch_record
 
         except Exception as e:
