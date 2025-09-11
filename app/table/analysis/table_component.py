@@ -22,7 +22,7 @@ class TableComponent:
 
                     # 添加排序参数
                     "orderBy": "${orderBy || 'current_rangking_day'}",
-                    "orderDir": "${orderDir || 'asc'}",
+                    "orderDir": "${orderDir || 'desc'}",
 
                     # 基础搜索条件参数
                     "keyword": "${keyword}",
