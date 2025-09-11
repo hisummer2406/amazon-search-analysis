@@ -34,6 +34,11 @@ class AnalysisCRUD:
                     query = query.order_by(desc(getattr(AmazonOriginSearchData, params.orderBy)))
                 else:
                     query = query.order_by(asc(getattr(AmazonOriginSearchData, params.orderBy)))
+            else:
+                query = query.order_by(
+                    desc(AmazonOriginSearchData.report_date_day),
+                    asc(AmazonOriginSearchData.current_rangking_day)
+                )
 
             return query.offset(skip).limit(params.perPage).all(), total_count
 

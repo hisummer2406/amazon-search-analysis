@@ -21,8 +21,8 @@ class TableComponent:
                     "perPage": "${perPage || 100}",
 
                     # 添加排序参数
-                    "orderBy": "${orderBy || 'current_rangking_day'}",
-                    "orderDir": "${orderDir || 'desc'}",
+                    "orderBy": "${orderBy}",
+                    "orderDir": "${orderDir}",
 
                     # 基础搜索条件参数
                     "keyword": "${keyword}",
@@ -61,7 +61,9 @@ class TableComponent:
             # 默认参数
             "defaultParams": {
                 "page": 1,
-                "perPage": 100
+                "perPage": 100,
+                "orderBy": "",  # 空值使用默认多字段排序
+                "orderDir": "desc"
             },
 
             # 表格列配置
