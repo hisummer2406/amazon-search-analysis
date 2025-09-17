@@ -167,11 +167,11 @@ class TableComponent:
                 "name": "ranking_trend_day",
                 "label": "排名趋势",
                 "type": "chart",
-                "width": 300,
+                "width": 330,
                 "sortable": False,
                 "className": "text-center chart-cell",
                 "labelClassName": "text-center vertical-middle font-size-14",
-                "height": 200,
+                "height": 220,
                 "config": {
                     "dataset": {
                         "source": "${ranking_trend_day}"
@@ -190,7 +190,10 @@ class TableComponent:
                     },
                     "yAxis": {
                         "type": "value",
-                        "inverse": True
+                        "inverse": True,
+                        "axisLabel": {
+                            "formatter": "function (value) { return value >= 1000 ? (value/10000).toFixed(0) + 'W' : value;}"
+                        }
                     },
                     "series": [
                         {
