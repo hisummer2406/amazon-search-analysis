@@ -66,11 +66,21 @@ class SearchComponent:
                                     "className": "label-text mr-1"
                                 },
                                 {
-                                    "type": "input-text",
+                                    "type": "select",
                                     "name": "category",
-                                    "placeholder": "请输入类目",
+                                    "placeholder": "请选择类目",
                                     "className": "flex-1",
-                                    "clearable": True
+                                    "clearable": True,
+                                    "searchable": True,
+                                    "source": {
+                                        "method": "get",
+                                        "url": "/api/analysis/categories",
+                                        "headers": {
+                                            "Authorization": "${ls:access_token ? 'Bearer ' + ls:access_token : ''}"
+                                        }
+                                    },
+                                    "labelField": "label",
+                                    "valueField": "value"
                                 }
                             ]
                         },

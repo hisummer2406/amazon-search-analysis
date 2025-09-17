@@ -4,6 +4,8 @@ from sqlalchemy import desc, or_, asc
 from typing import List, Tuple
 from datetime import datetime
 
+from sqlalchemy import desc, or_, asc, func, and_
+
 from app.table.analysis.analysis_model import AmazonOriginSearchData
 from app.table.search.search_schemas import AnalysisSearchRequest
 
@@ -46,9 +48,43 @@ class AnalysisCRUD:
             logger.error(f"分页搜索数据失败: {e}")
             return [], 0
 
+    def get_categories(self) -> List[dict]:
+        """获取类目列表，按数量排序"""
+        try:
+            result = self.db.query(
+                func.count(AmazonOriginSearchData.id).label('cnt'),
+                AmazonOriginSearchData.top_category
+            ).group_by(
+                AmazonOriginSearchData.top_category
+            ).order_by(
+                func.count(AmazonOriginSearchData.id).desc()
+            ).all()
+
+            return [
+                {
+                    "label": f"{item.top_category} ({item.cnt})",
+                    "value": item.top_category
+                }
+                for item in result
+            ]
+        except Exception as e:
+            logger.error(f"获取类目列表失败: {e}")
+            return []
+
     def _build_search_query(self, params: AnalysisSearchRequest):
         """构建搜索查询"""
         query = self.db.query(AmazonOriginSearchData)
+
+        # 默认过滤条件：排除关键词中包含品牌词的条目
+        query = query.filter(
+            and_(
+                AmazonOriginSearchData.top_brand.isnot(None),
+                AmazonOriginSearchData.top_brand != '',
+                ~func.lower(AmazonOriginSearchData.keyword).like(
+                    func.concat('%', func.lower(AmazonOriginSearchData.top_brand), '%')
+                )
+            )
+        )
 
         # 基础搜索条件
         query = self._apply_basic_filters(query, params)

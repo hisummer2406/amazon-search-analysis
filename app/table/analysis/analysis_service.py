@@ -1,5 +1,6 @@
 import logging
 from sqlalchemy.orm import Session
+from typing import List
 
 from app.table.analysis.analysis_crud import AnalysisCRUD
 from app.table.analysis.analysis_model import AmazonOriginSearchData
@@ -55,6 +56,10 @@ class AnalysisService:
                     "perPage": params.perPage
                 }
             )
+
+    def get_categories(self) -> List[dict]:
+        """获取类目选项"""
+        return self.crud.get_categories()
 
     def _format_data_item(self, item: AmazonOriginSearchData) -> AnalysisDataItem:
         """格式化单个数据项"""
@@ -124,3 +129,4 @@ class AnalysisService:
                 is_new_day=False,
                 is_new_week=False
             )
+

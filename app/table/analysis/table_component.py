@@ -185,10 +185,12 @@ class TableComponent:
                     },
 
                     "xAxis": {
-                        "type": "category"
+                        "type": "category",
+                        "inverse": True,
                     },
                     "yAxis": {
-                        "type": "value"
+                        "type": "value",
+                        "inverse": True
                     },
                     "series": [
                         {

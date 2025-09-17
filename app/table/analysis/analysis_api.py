@@ -35,7 +35,7 @@ def _parse_optional_value(value: Optional[str], value_type: type = str):
 
 @analysis_router.get("/search", response_model=AnalysisSearchResponse)
 async def search_data(
-        current_user: dict = Depends(simple_auth.get_current_user),  # 添加这行
+        current_user: dict = Depends(simple_auth.get_current_user),
         # 分页参数
         page: int = Query(1, ge=1, description="页码"),
         perPage: int = Query(50, ge=1, le=200, description="每页数量"),
@@ -137,3 +137,23 @@ async def search_data(
             status_code=500,
             detail=f"查询失败: {str(e)}"
         )
+
+
+@analysis_router.get("/categories")
+async def get_categories(
+        current_user: dict = Depends(simple_auth.get_current_user),
+        db: Session = Depends(get_db)
+):
+    """获取类目下拉选项"""
+    try:
+        analysis_service = AnalysisService(db)
+        categories = analysis_service.get_categories()
+
+        return {
+            "status": 0,
+            "msg": "获取成功",
+            "data": categories
+        }
+    except Exception as e:
+        logger.error(f"获取类目选项失败: {e}")
+        raise HTTPException(status_code=500, detail=f"获取失败: {str(e)}")
