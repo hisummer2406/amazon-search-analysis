@@ -54,7 +54,7 @@ class UploadService:
     def __init__(self, db: Session):
         self.db = db
         self.csv_processor = CSVProcessor(batch_size=settings.BATCH_SIZE)
-        self.max_workers = max(settings.MAX_WORKERS, os.cpu_count())
+        self.max_workers = min(settings.MAX_WORKERS, os.cpu_count())
         self.multiprocess_threshold = settings.MULTIPROCESSING_THRESHOLD_MB * 1024 * 1024
 
     async def process_csv_file(

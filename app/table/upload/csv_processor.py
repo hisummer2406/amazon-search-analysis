@@ -120,8 +120,8 @@ class CSVProcessor:
                 )
                 total_processed += processed
 
-                # 每处理几个小批次就提交一次，避免长时间持有连接
-                if (i // mini_batch_size + 1) % 5 == 0:
+                # 每处理1个大批次就提交
+                if (i // mini_batch_size + 1) % 1 == 0:
                     self._safe_commit(db_session)
 
             # 最终提交
