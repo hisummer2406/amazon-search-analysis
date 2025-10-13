@@ -28,10 +28,10 @@ class AnalysisCRUD:
             base_query = self._build_search_query(params)
 
             # 方案1：使用count()优化 - 只查询主键进行计数
-            total_count = self.db.query(AmazonOriginSearchData.id).filter(
-                *base_query.whereclause.clauses if hasattr(base_query.whereclause, 'clauses')
-                else base_query.whereclause
-            ).count()
+            count_query = self.db.query(func.count()).select_from(
+                base_query.with_entities(AmazonOriginSearchData.id).subquery()
+            )
+            total_count = count_query.scalar()
 
             # 或者更简单的方式：直接在base_query上调用count，让数据库优化器处理
             # total_count = base_query.count()
