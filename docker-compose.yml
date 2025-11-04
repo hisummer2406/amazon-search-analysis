@@ -15,10 +15,10 @@ services:
       resources:
         limits:
           cpus: '3.5'
-          memory: 7G
+          memory: 4G
         reservations:
           cpus: '2.0'
-          memory: 4G
+          memory: 2G
     restart: unless-stopped
 
 volumes: {}
