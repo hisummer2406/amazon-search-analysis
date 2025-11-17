@@ -7,7 +7,7 @@ class AnalysisSearchRequest(BaseModel):
     """分析搜索请求模型"""
     # 分页参数
     page: int = Field(default=1, ge=1, description="页码")
-    perPage: int = Field(default=50, ge=1, le=200, description="每页数量")
+    perPage: int = Field(default=50, ge=1, le=1001, description="每页数量")
 
     # 搜索条件
     orderBy: Optional[str] = Field(None, description="排序字段")

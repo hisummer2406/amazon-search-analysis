@@ -130,7 +130,7 @@ class SearchComponent:
                                                 {
                                                     "actionType": "custom",
                                                     "script": """
-                                                        const form = event.context.props.data || {};
+                                                        const form = event.data || {};
                                                         const params = new URLSearchParams();
                         
                                                         // 收集所有搜索参数
