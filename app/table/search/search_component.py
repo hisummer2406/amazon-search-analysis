@@ -1,5 +1,5 @@
 """
-搜索组件 - 修复高级搜索打不开的问题，优化参数传递
+搜索组件
 """
 
 
@@ -117,6 +117,62 @@ class SearchComponent:
                                     "type": "reset",
                                     "label": "重置",
                                     "className": "mr-2"
+                                },
+                                {
+                                    "type": "button",
+                                    "label": "导出",
+                                    "level": "success",
+                                    "size": "sm",
+                                    "className": "mr-2",
+                                    "onEvent": {
+                                        "click": {
+                                            "actions": [
+                                                {
+                                                    "actionType": "custom",
+                                                    "script": """
+                                                        const form = event.context.props.data || {};
+                                                        const params = new URLSearchParams();
+                        
+                                                        // 收集所有搜索参数
+                                                        Object.keys(form).forEach(key => {
+                                                            if (form[key] !== null && form[key] !== undefined && form[key] !== '') {
+                                                                params.append(key, form[key]);
+                                                            }
+                                                        });
+                        
+                                                        const token = localStorage.getItem('access_token');
+                                                        const url = `/api/analysis/export?${params.toString()}`;
+                        
+                                                        // 下载文件
+                                                        fetch(url, {
+                                                            headers: {'Authorization': `Bearer ${token}`}
+                                                        })
+                                                        .then(response => {
+                                                            if (!response.ok) {
+                                                                return response.json().then(err => {
+                                                                    throw new Error(err.detail || '导出失败');
+                                                                });
+                                                            }
+                                                            return response.blob();
+                                                        })
+                                                        .then(blob => {
+                                                            const url = window.URL.createObjectURL(blob);
+                                                            const a = document.createElement('a');
+                                                            a.href = url;
+                                                            a.download = `keywords_${Date.now()}.csv`;
+                                                            document.body.appendChild(a);
+                                                            a.click();
+                                                            window.URL.revokeObjectURL(url);
+                                                            document.body.removeChild(a);
+                                                        })
+                                                        .catch(err => {
+                                                            alert(err.message || '导出失败');
+                                                        });
+                                                """
+                                                }
+                                            ]
+                                        }
+                                    }
                                 },
                                 {
                                     "type": "button",

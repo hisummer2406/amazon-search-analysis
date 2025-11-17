@@ -1,6 +1,4 @@
-# app/admin/analysis/upload_component.py - 支持分块上传
 import config
-
 
 class UploadComponent:
     """上传功能组件 - 支持分块上传"""
