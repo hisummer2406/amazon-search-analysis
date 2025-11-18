@@ -209,7 +209,7 @@ async def export_data(
     try:
         search_params = AnalysisSearchRequest(
             page=1,
-            perPage=1000,
+            perPage=1500,
             # 排序参数
             orderBy=_parse_optional_value(orderBy),
             orderDir=_parse_optional_value(orderDir),
