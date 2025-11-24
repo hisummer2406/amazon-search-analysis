@@ -4,7 +4,7 @@ from sqlalchemy import desc, or_, asc
 from typing import List, Tuple
 from datetime import datetime
 
-from sqlalchemy import desc, or_, asc, func, and_
+from sqlalchemy import desc, or_, asc, func, and_, text, select
 
 from app.table.analysis.analysis_model import AmazonOriginSearchData
 from app.table.search.search_schemas import AnalysisSearchRequest
@@ -27,14 +27,8 @@ class AnalysisCRUD:
             # 构建基础查询
             base_query = self._build_search_query(params)
 
-            # 方案1：使用count()优化 - 只查询主键进行计数
-            count_query = self.db.query(func.count()).select_from(
-                base_query.with_entities(AmazonOriginSearchData.id).subquery()
-            )
-            total_count = count_query.scalar()
-
-            # 或者更简单的方式：直接在base_query上调用count，让数据库优化器处理
-            # total_count = base_query.count()
+            # 预估总数
+            total_count = self._get_table_estimate_count()
 
             # 应用排序和分页到完整查询
             result_query = base_query
@@ -58,42 +52,56 @@ class AnalysisCRUD:
             return [], 0
 
     def get_categories(self) -> List[dict]:
-        """获取类目列表，按数量排序"""
+        """获取类目列表 - 使用视图查询"""
         try:
-            result = self.db.query(
-                func.count(AmazonOriginSearchData.id).label('cnt'),
-                AmazonOriginSearchData.top_category
-            ).group_by(
-                AmazonOriginSearchData.top_category
-            ).order_by(
-                func.count(AmazonOriginSearchData.id).desc()
-            ).all()
+            result = self.db.execute(
+                text("SELECT top_category, cnt FROM analysis.my_category_stats ORDER BY cnt DESC")
+            ).fetchall()
 
             return [
                 {
-                    "label": f"{item.top_category} ({item.cnt})",
-                    "value": item.top_category
+                    "label": f"{row.top_category} ({row.cnt})",
+                    "value": row.top_category
                 }
-                for item in result
+                for row in result
             ]
         except Exception as e:
             logger.error(f"获取类目列表失败: {e}")
             return []
+
+    def _get_table_estimate_count(self) -> int:
+        """使用PG统计信息快速估算总行数"""
+        try:
+            result = self.db.execute(
+                text("""
+                     SELECT reltuples::bigint AS estimate
+                     FROM pg_class
+                     WHERE relname = :table_name
+                       AND relnamespace = (SELECT oid
+                                           FROM pg_namespace
+                                           WHERE nspname = :schema_name)
+                     """),
+                {"table_name": "amazon_origin_search_data", "schema_name": "analysis"}
+            ).scalar()
+            return result or 0
+        except Exception as e:
+            logger.error(f"估算表行数失败: {e}")
+            return 0
 
     def _build_search_query(self, params: AnalysisSearchRequest):
         """构建搜索查询"""
         query = self.db.query(AmazonOriginSearchData)
 
         # 默认过滤条件：排除关键词中包含品牌词的条目
-        query = query.filter(
-            and_(
-                AmazonOriginSearchData.top_brand.isnot(None),
-                AmazonOriginSearchData.top_brand != '',
-                ~func.lower(AmazonOriginSearchData.keyword).like(
-                    func.concat('%', func.lower(AmazonOriginSearchData.top_brand), '%')
-                )
-            )
-        )
+        # query = query.filter(
+        #     and_(
+        #         AmazonOriginSearchData.top_brand.isnot(None),
+        #         AmazonOriginSearchData.top_brand != '',
+        #         ~func.lower(AmazonOriginSearchData.keyword).like(
+        #             func.concat('%', func.lower(AmazonOriginSearchData.top_brand), '%')
+        #         )
+        #     )
+        # )
 
         # 基础搜索条件
         query = self._apply_basic_filters(query, params)

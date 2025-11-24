@@ -8,7 +8,8 @@ class TableComponent:
             "type": "crud",
             "name": "data_table",
             "className": "analysis-analysis m-2",
-            # API配置 - 修复参数传递
+
+            # API配置
             "api": {
                 "method": "get",
                 "url": "/api/analysis/search",
@@ -61,7 +62,7 @@ class TableComponent:
             # 默认参数
             "defaultParams": {
                 "page": 1,
-                "perPage": 100,
+                "perPage": 50,
                 "orderBy": "",  # 空值使用默认多字段排序
                 "orderDir": "desc"
             },
@@ -162,7 +163,7 @@ class TableComponent:
                 "labelClassName": "text-center vertical-middle font-size-14"
             },
 
-            # 趋势图列 - 修复版本
+            # 趋势图列
             {
                 "name": "ranking_trend_day",
                 "label": "排名趋势",
@@ -174,7 +175,7 @@ class TableComponent:
                 "height": 220,
                 "config": {
                     "dataset": {
-                        "source": "${ranking_trend_day}"
+                        "source": "${ranking_trend_day || []}"
                     },
                     "tooltip": {
                         "trigger": "axis",
