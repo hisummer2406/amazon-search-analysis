@@ -93,15 +93,18 @@ class AnalysisCRUD:
         query = self.db.query(AmazonOriginSearchData)
 
         # 默认过滤条件：排除关键词中包含品牌词的条目
-        # query = query.filter(
-        #     and_(
-        #         AmazonOriginSearchData.top_brand.isnot(None),
-        #         AmazonOriginSearchData.top_brand != '',
-        #         ~func.lower(AmazonOriginSearchData.keyword).like(
-        #             func.concat('%', func.lower(AmazonOriginSearchData.top_brand), '%')
-        #         )
-        #     )
-        # )
+        query = query.filter(
+            and_(
+                AmazonOriginSearchData.top_brand.isnot(None),
+                AmazonOriginSearchData.top_brand != '',
+                ~func.lower(AmazonOriginSearchData.keyword).like(
+                    func.concat('%', func.lower(AmazonOriginSearchData.top_brand), '%')
+                )
+            )
+        )
+
+        # 基础过滤：排除日排名为0的数据
+        query = query.filter(AmazonOriginSearchData.current_rangking_day != 0)
 
         # 基础搜索条件
         query = self._apply_basic_filters(query, params)

@@ -175,7 +175,7 @@ class TableComponent:
                 "height": 220,
                 "config": {
                     "dataset": {
-                        "source": "${ranking_trend_day || []}"
+                        "source": "${ranking_trend_day}"
                     },
                     "tooltip": {
                         "trigger": "axis",
