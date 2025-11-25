@@ -27,8 +27,14 @@ class AnalysisCRUD:
             # 构建基础查询
             base_query = self._build_search_query(params)
 
-            # 预估总数
-            total_count = self._get_table_estimate_count()
+            # 仅第一页或少量数据时精确统计
+            if self._has_user_filters(params) and params.page == 1:
+                total_count = base_query.count()
+            elif self._has_user_filters(params):
+                # 后续页使用limit估算（避免全表扫描）
+                total_count = base_query.limit(10000).count()
+            else:
+                total_count = self._get_table_estimate_count()
 
             # 应用排序和分页到完整查询
             result_query = base_query
@@ -68,6 +74,26 @@ class AnalysisCRUD:
         except Exception as e:
             logger.error(f"获取类目列表失败: {e}")
             return []
+
+    def _has_user_filters(self, params: AnalysisSearchRequest) -> bool:
+        """判断是否有用户搜索条件（排除默认过滤）"""
+        return any([
+            # 基础搜索
+            params.keyword, params.brand, params.category,
+            params.asin, params.product_title, params.report_date,
+            # 排名范围
+            params.daily_ranking_min is not None, params.daily_ranking_max is not None,
+            params.weekly_ranking_min is not None, params.weekly_ranking_max is not None,
+            # 变化范围
+            params.daily_change_min is not None, params.daily_change_max is not None,
+            params.weekly_change_min is not None, params.weekly_change_max is not None,
+            # 份额转化率
+            params.click_share_min is not None, params.click_share_max is not None,
+            params.conversion_share_min is not None, params.conversion_share_max is not None,
+            params.conversion_rate_min is not None, params.conversion_rate_max is not None,
+            # 布尔值
+            params.is_new_day is not None, params.is_new_week is not None
+        ])
 
     def _get_table_estimate_count(self) -> int:
         """使用PG统计信息快速估算总行数"""
