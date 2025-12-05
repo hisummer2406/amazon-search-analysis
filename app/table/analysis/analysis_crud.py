@@ -132,6 +132,18 @@ class AnalysisCRUD:
         # 基础过滤：排除日排名为0的数据
         query = query.filter(AmazonOriginSearchData.current_rangking_day != 0)
 
+        # 新增：过滤黑名单类目
+        query = query.filter(
+            ~AmazonOriginSearchData.top_category.in_([
+                'Books',
+                'Grocery',
+                'Video Games',
+                'Digital_Video_Download',
+                'Digital_Ebook_Purchase',
+                'Digital_Music_Purchase'
+            ])
+        )
+
         # 基础搜索条件
         query = self._apply_basic_filters(query, params)
         # 排名范围筛选
