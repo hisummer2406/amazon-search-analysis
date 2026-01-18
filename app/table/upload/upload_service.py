@@ -8,6 +8,7 @@ from typing import Tuple, Optional, List
 from datetime import datetime, date
 from pathlib import Path
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 
 from app.table.upload.import_model import ImportBatchRecords, StatusEnum
 from app.table.upload.csv_processor import CSVProcessor, validate_csv_structure
@@ -177,9 +178,8 @@ class UploadService:
             # 使用新会话更新最终状态
             from database import SessionFactory
             with SessionFactory() as fresh_db:
-                fresh_record = fresh_db.query(ImportBatchRecords).filter(
-                    ImportBatchRecords.id == batch_record.id
-                ).first()
+                stmt = select(ImportBatchRecords).where(ImportBatchRecords.id == batch_record.id)
+                fresh_record = fresh_db.execute(stmt).scalar_one_or_none()
                 if fresh_record:
                     fresh_record.processed_keywords = total_processed
                     fresh_record.total_records = total_processed
@@ -306,9 +306,8 @@ class UploadService:
                 try:
                     from database import SessionFactory
                     with SessionFactory() as fresh_db:
-                        fresh_record = fresh_db.query(ImportBatchRecords).filter(
-                            ImportBatchRecords.id == batch_record.id
-                        ).first()
+                        stmt = select(ImportBatchRecords).where(ImportBatchRecords.id == batch_record.id)
+                        fresh_record = fresh_db.execute(stmt).scalar_one_or_none()
 
                         if not fresh_record or fresh_record.status != StatusEnum.PROCESSING:
                             break
@@ -393,9 +392,8 @@ class UploadService:
             # 使用新的数据库会话更新错误状态
             from database import SessionFactory
             with SessionFactory() as fresh_db:
-                fresh_record = fresh_db.query(ImportBatchRecords).filter(
-                    ImportBatchRecords.id == batch_record.id
-                ).first()
+                stmt = select(ImportBatchRecords).where(ImportBatchRecords.id == batch_record.id)
+                fresh_record = fresh_db.execute(stmt).scalar_one_or_none()
                 if fresh_record:
                     fresh_record.status = StatusEnum.FAILED
                     fresh_record.error_message = error_message[:500]  # 限制错误消息长度

@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, func
+from sqlalchemy import desc, func, select
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime
 import logging
@@ -69,7 +69,8 @@ class UserCenterCRUD:
     def get_user_by_id(self, user_id: int) -> Optional[UserCenter]:
         """根据ID获取用户"""
         try:
-            return self.db.query(UserCenter).filter(UserCenter.id == user_id).first()
+            stmt = select(UserCenter).where(UserCenter.id == user_id)
+            return self.db.execute(stmt).scalar_one_or_none()
         except Exception as e:
             logger.error(f"根据ID获取用户失败: {e}")
             return None
@@ -77,7 +78,8 @@ class UserCenterCRUD:
     def get_user_by_username(self, username: str) -> Optional[UserCenter]:
         """根据用户名获取用户"""
         try:
-            return self.db.query(UserCenter).filter(UserCenter.user_name == username).first()
+            stmt = select(UserCenter).where(UserCenter.user_name == username)
+            return self.db.execute(stmt).scalar_one_or_none()
         except Exception as e:
             logger.error(f"根据用户名获取用户失败: {e}")
             return None
@@ -91,18 +93,19 @@ class UserCenterCRUD:
     ) -> List[UserCenter]:
         """获取用户列表"""
         try:
-            query = self.db.query(UserCenter)
+            stmt = select(UserCenter)
 
             # 搜索条件
             if user_name:
-                query = query.filter(UserCenter.user_name.ilike(f"%{user_name}%"))
+                stmt = stmt.where(UserCenter.user_name.ilike(f"%{user_name}%"))
 
             # 状态筛选
             if is_active is not None:
-                query = query.filter(UserCenter.is_active == is_active)
+                stmt = stmt.where(UserCenter.is_active == is_active)
 
             # 排序和分页
-            return query.order_by(desc(UserCenter.created_at)).offset(skip).limit(limit).all()
+            stmt = stmt.order_by(desc(UserCenter.created_at)).offset(skip).limit(limit)
+            return list(self.db.execute(stmt).scalars().all())
 
         except Exception as e:
             logger.error(f"获取用户列表失败: {e}")
@@ -115,17 +118,17 @@ class UserCenterCRUD:
     ) -> int:
         """统计用户总数"""
         try:
-            query = self.db.query(func.count(UserCenter.id))
+            stmt = select(func.count(UserCenter.id))
 
             # 搜索条件
             if search:
-                query = query.filter(UserCenter.user_name.ilike(f"%{search}%"))
+                stmt = stmt.where(UserCenter.user_name.ilike(f"%{search}%"))
 
             # 状态筛选
             if is_active is not None:
-                query = query.filter(UserCenter.is_active == is_active)
+                stmt = stmt.where(UserCenter.is_active == is_active)
 
-            return query.scalar() or 0
+            return self.db.execute(stmt).scalar() or 0
 
         except Exception as e:
             logger.error(f"统计用户总数失败: {e}")

@@ -86,18 +86,18 @@ async def lifespan(app: FastAPI):
     # ==================== 关闭事件 ====================
     logger.info("🛑 应用正在关闭...")
 
-    # 关闭数据库连接
+    # 关闭数据库连接池
     try:
-        engine.dispatch()
-        logger.info("✅ 同步数据库连接关闭成功")
+        engine.dispose()
+        logger.info("✅ 同步数据库连接池关闭成功")
     except Exception as e:
-        logger.error(f"❌ 同步数据库连接关闭失败: {e}")
+        logger.error(f"❌ 同步数据库连接池关闭失败: {e}")
 
     try:
         await async_engine.dispose()
-        logger.info("✅ 异步数据库连接关闭成功")
+        logger.info("✅ 异步数据库连接池关闭成功")
     except Exception as e:
-        logger.error(f"❌ 异步数据库连接关闭失败: {e}")
+        logger.error(f"❌ 异步数据库连接池关闭失败: {e}")
 
     logger.info("👋 应用已安全关闭")
 
@@ -172,6 +172,30 @@ async def get_system_metrics():
         'current_metrics': metrics,
         'summary': summary,
         'status': 'healthy' if metrics['cpu']['total'] < 80 and metrics['memory']['percent'] < 80 else 'warning'
+    }
+
+
+@app.get("/health/pool")
+async def pool_status():
+    """获取数据库连接池状态 - 用于监控和诊断"""
+    from sqlalchemy import inspect
+
+    sync_inspect = inspect(engine)
+
+    return {
+        "sync_engine": {
+            "pool_size": sync_inspect.pool.size(),
+            "checked_in": sync_inspect.pool.checkedin(),
+            "checked_out": sync_inspect.pool.checkedout(),
+            "overflow": sync_inspect.pool.overflow(),
+            "max_overflow": settings.DB_MAX_OVERFLOW,
+        },
+        "config": {
+            "pool_size": settings.DB_POOL_SIZE,
+            "max_overflow": settings.DB_MAX_OVERFLOW,
+            "pool_timeout": settings.DB_POOL_TIMEOUT,
+            "pool_recycle": settings.DB_POOL_RECYCLE,
+        }
     }
 
 

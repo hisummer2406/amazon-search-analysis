@@ -1,133 +1,123 @@
-# CLAUDE_ZH.md
+# CLAUDE.md
 
-此文件为 Claude Code (claude.ai/code) 在此代码库中工作时提供指导。
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## 项目概述
+## Project Overview
 
-这是一个基于 Python/FastAPI 构建的亚马逊关键词分析系统，能够处理大规模 CSV 数据（GB 级文件）、实时数据分析和可视化。系统支持多用户管理、JWT 认证和使用多进程技术的高性能数据处理。
+Amazon Search Analysis System - A professional Amazon search term data analysis platform supporting GB-level file processing, real-time data analysis, and visualization. Built with FastAPI + PostgreSQL, serving ~200 concurrent users for read-heavy operations with periodic batch data imports (~500K records per batch).
 
-## 系统架构
+## Development Commands
 
-```
-前端 (Amis UI) → 应用层 (FastAPI) → 数据层 (PostgreSQL)
-                     ↓
-            ┌────────┴────────┐
-            ├─ 认证模块 (JWT)
-            ├─ 数据分析接口
-            ├─ 文件上传处理
-            └─ 用户权限管理
-```
-
-**核心技术**: FastAPI + PostgreSQL + Pandas + 多进程处理
-
-## 常见开发任务
-
-### 运行应用程序
-
-**本地开发:**
 ```bash
-# 创建虚拟环境
-python3 -m venv venv
-source venv/bin/activate
-
-# 安装依赖
-pip install -r requirements.txt
-
-# 启动应用
+# Local development
+source .venv/bin/activate
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
 
-**Docker 部署:**
-```bash
-# 使用脚本部署
-chmod +x deploy.sh
-./deploy.sh
-
-# 或者使用 Docker Compose 手动部署
-docker-compose up -d
-```
-
-### 测试
-
-运行测试:
-```bash
-# 运行特定测试文件
+# Run tests
 python -m pytest test/
 
-# 运行带覆盖率的测试
-python -m pytest --cov=app test/
+# Docker deployment
+docker-compose up -d
+docker-compose logs -f app | grep upload  # Monitor upload logs
+docker-compose restart app  # Restart app container
+
+# Database operations
+# Uses PostgreSQL with schema "analysis"
+# Connection: sync (psycopg2) + async (asyncpg) engines both configured
 ```
 
-### 核心模块
+## Architecture
 
-1. **app/table/upload/** - 处理 CSV 文件上传，支持分块处理和大文件多进程处理
-2. **app/table/analysis/** - 数据分析和搜索功能
-3. **app/auth/** - 认证和授权（基于 JWT）
-4. **app/user/** - 用户管理
-5. **database.py** - 数据库连接和会话管理
-6. **config.py** - 应用配置，使用 pydantic-settings
-
-### 性能优化
-
-关键性能特性:
-- 大文件处理的多进程支持（GB 级 CSV 文件）
-- 可配置批次大小的批处理
-- 数据库连接池
-- 内存效率的分块文件读取
-- 长时间运行操作的进度监控
-
-`.env` 中的配置参数:
-```
-BATCH_SIZE=5000          # 批处理大小
-MAX_WORKERS=4            # 多进程工作数
-DB_POOL_SIZE=100         # 数据库连接池大小
-FILE_SPLIT_LINES=100000  # 每个文件分块的行数
-```
-
-## 项目结构
+### Module Structure
 
 ```
-amazon-search-analysis/
-├── app/                    # 应用主目录
-│   ├── auth/              # 认证模块
-│   ├── table/             # 数据模块
-│   │   ├── analysis/      # 数据分析
-│   │   ├── search/        # 搜索功能
-│   │   └── upload/        # 文件上传
-│   └── user/              # 用户模块
-├── static/                # 静态文件
-├── uploads/               # 上传目录
-├── main.py                # 应用入口点
-└── config.py              # 配置文件
+app/
+├── auth/              # JWT authentication + middleware (simple_auth.py for user validation)
+├── table/
+│   ├── analysis/      # Core data analysis (model, crud, service, api layers)
+│   ├── search/        # Search schemas and components
+│   └── upload/        # CSV file upload and processing (csv_processor.py handles GB files)
+└── user/              # User management (model, crud, api, admin)
+
+main.py                # FastAPI app entry, lifespan management, health check
+config.py              # Pydantic settings (env-based config)
+database.py            # SQLAlchemy 2.0 sync + async engines, session factories
 ```
 
-## 数据库结构
+### Layered Architecture Pattern
 
-关键表:
-- `amazon_origin_search_data` - 主数据表，包含亚马逊搜索关键词和指标
-- `import_batch_records` - 文件处理批次记录
-- `user_center` - 用户管理表
+**All table modules follow strict layering:**
 
-## API 文档
+1. **Model** (`*_model.py`): SQLAlchemy 2.0 ORM models using `DeclarativeBase`, schema-qualified
+2. **CRUD** (`*_crud.py`): Database access layer, no business logic
+3. **Service** (`*_service.py`): Business logic, calls CRUD layer
+4. **API** (`*_api.py`): FastAPI routers, thin controllers calling services
+5. **Schemas** (`*_schemas.py`): Pydantic v2 models for request/response DTOs
 
-访问地址:
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+**Example**: `app/table/analysis/` - `analysis_api.py` → `analysis_service.py` → `analysis_crud.py` → `analysis_model.py`
 
-## 环境配置
+### Data Import Flow
 
-创建 `.env` 文件，包含:
-```
-# 数据库配置
-DATABASE_URL=postgresql://postgres:your_password@db:5432/amazon_db
-DATABASE_URL_ASYNC=postgresql+asyncpg://postgres:your_password@db:5432/amazon_db
+**CSV Upload Processing** (in `app/table/upload/upload_api.py` + `csv_processor.py`):
+- Validates CSV structure (metadata + header + data rows)
+- Chunks files using pandas (configurable `BATCH_SIZE`, default 6000)
+- Uses PostgreSQL UPSERT (`INSERT ... ON CONFLICT DO UPDATE`) for deduplication
+- Implements connection retry and mini-batch commits (`MINIBATCH_SIZE=500`)
+- Supports both daily and weekly data types with different field mappings
+- Ranking trend stored as JSONB array (last 7 days)
+
+### Authentication & Authorization
+
+- JWT-based authentication via `fastapi-user-auth` + custom `simple_auth.py`
+- Middleware: `AdminAuthMiddleware` validates tokens from Cookie/Authorization header
+- Default admin: `admin / pwd123` (change `ADMIN_SECRET_KEY` in production)
+
+### Database Design
+
+**Schema**: `analysis`
+
+**Main Table**: `amazon_origin_search_data`
+- Unique constraint on `keyword`
+- Stores daily + weekly ranking data in same row
+- JSONB field `ranking_trend_day` for 7-day history
+- Indexed on: `report_date_day`, `current_rangking_day`, `top_brand`, `top_category`
+
+**View**: `my_category_stats` - Category statistics for dropdown options
+
+### Performance Optimizations
+
+1. **Connection Pooling**: `DB_POOL_SIZE=100`, `MAX_OVERFLOW=50`, `POOL_RECYCLE=1800s`
+2. **Query Optimization**:
+   - Uses PG statistics estimates (`pg_class.reltuples`) for total count on large tables
+   - `LIMIT 10000` count for filtered queries on pagination
+   - Default filter excludes keywords containing brand name and rank=0 records
+   - Blacklist categories filtered out (Books, Grocery, Video Games, etc.)
+3. **Batch Processing**: `BATCH_SIZE=6000` for pandas chunks, `MINIBATCH_SIZE=500` for DB commits
+4. **Multi-processing**: Configurable `MAX_WORKERS=4` for files > `MULTIPROCESSING_THRESHOLD_MB=100MB`
+
+## Key Configuration (.env)
+
+```bash
+# Database (sync + async URLs both required)
+DATABASE_URL=postgresql://user:pass@host/db
+DATABASE_URL_ASYNC=postgresql+asyncpg://user:pass@host/db
 DATABASE_SCHEMA=analysis
 
-# 安全配置（必须修改）
-ADMIN_SECRET_KEY=<生成随机字符串>
+# Upload
+MAX_FILE_SIZE=3221225472  # 3GB
+BATCH_SIZE=6000
+MINIBATCH_SIZE=500
 
-# 性能配置
-BATCH_SIZE=5000
-MAX_WORKERS=4
-FILE_SPLIT_LINES=100000
+# Performance
+DB_POOL_SIZE=100
+DB_MAX_OVERFLOW=50
 ```
+
+## Important Constraints
+
+1. **SQLAlchemy 2.0 Only**: No `.query()`, use `select()` with session
+2. **Dual Engines**: Both sync (`engine`) and async (`async_engine`) available - choose appropriately
+3. **Schema Qualification**: All models use `schema=settings.DATABASE_SCHEMA`
+4. **UPSERT Logic**: CSV imports use raw SQL with `ON CONFLICT (keyword) DO UPDATE` for complex ranking trend JSONB manipulation
+5. **Transaction Boundaries**: Service layer controls commits, CRUD layer never commits
+6. **Pydantic v2**: Uses `model_config = ConfigDict(...)`, `field_validator`

@@ -1,3 +1,4 @@
+from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
 
@@ -42,9 +43,7 @@ class Settings(BaseSettings):
     DB_ECHO: bool = False  # 生产环境关闭SQL日志
     DB_QUERY_TIMEOUT: int = 30  # 30秒查询超时
 
-    class Config:
-        env_file = ".env"
-        extra = "ignore"
+    model_config = ConfigDict(env_file=".env", extra="ignore")
 
 
 # 创建设置实例
