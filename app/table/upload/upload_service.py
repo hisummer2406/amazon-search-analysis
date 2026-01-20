@@ -160,10 +160,15 @@ class UploadService:
                 try:
                     results = await asyncio.gather(*tasks, return_exceptions=True)
                 finally:
-                    # 通知监控任务停止
+                    # 通知监控任务停止并等待
                     processing_done.set()
-                    # 等待监控任务完全退出（最多等待5秒）
-                    await asyncio.wait_for(monitor_task, timeout=5.0)
+                    try:
+                        await asyncio.wait_for(monitor_task, timeout=10.0)
+                    except asyncio.TimeoutError:
+                        logger.warning("监控任务超时，强制取消")
+                        monitor_task.cancel()
+                    except Exception as e:
+                        logger.warning(f"监控任务异常: {e}")
 
             # 4. 统计结果
             total_processed = sum(r.get('processed_count', 0) for r in results if isinstance(r, dict))
