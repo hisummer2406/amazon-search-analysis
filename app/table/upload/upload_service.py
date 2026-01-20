@@ -126,6 +126,7 @@ class UploadService:
         batch_record = None
         temp_dir = None
         start_time = datetime.now()
+        processing_done = asyncio.Event()  # 协调监控任务退出
 
         try:
             # 1. 初始化
@@ -152,10 +153,17 @@ class UploadService:
                     for i, chunk_file in enumerate(chunk_files)
                 ]
 
-                # 启动进度监控
-                monitor_task = asyncio.create_task(self._monitor_progress(batch_record, start_time))
-                results = await asyncio.gather(*tasks, return_exceptions=True)
-                monitor_task.cancel()
+                # 启动进度监控（传递 Event 用于协调退出）
+                monitor_task = asyncio.create_task(
+                    self._monitor_progress(batch_record, start_time, processing_done)
+                )
+                try:
+                    results = await asyncio.gather(*tasks, return_exceptions=True)
+                finally:
+                    # 通知监控任务停止
+                    processing_done.set()
+                    # 等待监控任务完全退出（最多等待5秒）
+                    await asyncio.wait_for(monitor_task, timeout=5.0)
 
             # 4. 统计结果
             total_processed = sum(r.get('processed_count', 0) for r in results if isinstance(r, dict))
@@ -292,11 +300,23 @@ class UploadService:
 
         return chunk_files
 
-    async def _monitor_progress(self, batch_record: ImportBatchRecords, start_time: datetime):
-        """监控处理进度"""
+    async def _monitor_progress(
+        self, batch_record: ImportBatchRecords, start_time: datetime, stop_event: asyncio.Event
+    ):
+        """监控处理进度 - 支持 Event 协调的优雅退出"""
         try:
-            while True:
-                await asyncio.sleep(10)
+            while not stop_event.is_set():  # 检查是否应该停止
+                try:
+                    # 使用 wait_for 支持快速响应停止信号（最多等待10秒）
+                    await asyncio.wait_for(stop_event.wait(), timeout=10.0)
+                    # 如果 wait_for 超时，继续执行下面的进度更新逻辑
+                    # 如果 stop_event 被设置，会立即返回并退出循环
+                except asyncio.TimeoutError:
+                    # 超时是正常的，继续执行进度更新
+                    pass
+
+                if stop_event.is_set():
+                    break
 
                 # 检查批次记录是否还在处理中
                 try:
@@ -314,8 +334,9 @@ class UploadService:
 
                 except Exception as e:
                     logger.warning(f"_monitor_progress:更新进度失败: {e}")
-                    # 简单的等待而不是复杂的重试逻辑
                     await asyncio.sleep(30)
+
+            logger.info("进度监控任务正常退出")
 
         except asyncio.CancelledError:
             logger.info("进度监控任务被取消")
