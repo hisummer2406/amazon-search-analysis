@@ -103,19 +103,13 @@ class UploadService:
 
             logger.info(f"开始单线程处理: {original_filename}, 预估记录数: {file_info['estimated_records']}")
 
-            # 处理CSV文件
+            # 处理CSV文件（内部已原子化：数据处理+状态标记在同一事务）
             success, message = await self._process_csv_with_upsert(
                 file_path, batch_record, report_date, data_type
             )
 
             if success:
-                batch_record.status = StatusEnum.COMPLETED
-                batch_record.completed_at = datetime.now()
-                processing_seconds = int(
-                    (datetime.now() - batch_record.created_at.replace(tzinfo=None)).total_seconds())
-                batch_record.processing_seconds = processing_seconds
-                self.db.commit()
-                logger.info(f"单线程处理完成: {original_filename}, 耗时: {processing_seconds}秒")
+                logger.info(f"单线程处理完成: {original_filename}")
 
             return success, message, batch_record
 
@@ -214,7 +208,7 @@ class UploadService:
     async def _process_csv_with_upsert(
             self, file_path: str, batch_record: ImportBatchRecords, report_date: date, data_type: str
     ) -> Tuple[bool, str]:
-        """单线程去重处理CSV文件"""
+        """单线程去重处理CSV文件 - 原子化：数据处理+状态标记在同一事务"""
         try:
             processed_count = 0
             start_time = datetime.now()
@@ -234,7 +228,7 @@ class UploadService:
                 batch_record.processed_keywords = processed_count
                 batch_record.processing_seconds = current_processing_seconds
 
-                # 定期提交进度更新
+                # 定期提交进度更新（保持PROCESSING状态）
                 if chunk_count % 5 == 0:
                     try:
                         self.db.commit()
@@ -247,10 +241,12 @@ class UploadService:
                                            processed_count / batch_record.total_records) * 100 if batch_record.total_records > 0 else 0
                     logger.info(f"处理进度: {progress:.1f}% ({processed_count}条)")
 
-            # 最终更新记录数
+            # 最终原子化更新：记录数 + 状态 + 时间，确保不会出现"数据已处理但状态为PROCESSING"的中间状态
             batch_record.total_records = processed_count
             final_processing_time = int((datetime.now() - start_time).total_seconds())
             batch_record.processing_seconds = final_processing_time
+            batch_record.status = StatusEnum.COMPLETED
+            batch_record.completed_at = datetime.now()
             self.db.commit()
 
             logger.info(f"处理完成，总记录数: {processed_count}, 总耗时: {final_processing_time}秒")
