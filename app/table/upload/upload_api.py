@@ -14,6 +14,7 @@ from app.table.upload.upload_schemas import ChunkStartRequest, FinishChunkReques
 from database import SessionFactory
 from app.table.upload.upload_service import UploadService
 from config import settings
+import database
 
 logger = logging.getLogger(__name__)
 upload_router = APIRouter()
@@ -299,7 +300,7 @@ async def upload_csv_file(
 @upload_router.get("/processing-status")
 async def get_processing_status(data_type: Optional[str] = None) -> Dict[str, Any]:
     """获取处理状态"""
-    with SessionFactory() as db:
+    async with database.AsyncSessionFactory() as db:
         try:
             from app.table.upload.import_model import ImportBatchRecords
             from sqlalchemy import desc, select
@@ -311,7 +312,8 @@ async def get_processing_status(data_type: Optional[str] = None) -> Dict[str, An
                 stmt = stmt.where(ImportBatchRecords.is_week_data == True)
 
             stmt = stmt.order_by(desc(ImportBatchRecords.created_at)).limit(5)
-            records = list(db.execute(stmt).scalars().all())
+            result = await db.execute(stmt)
+            records = list(result.scalars().all())
 
             items = []
             for r in records:
