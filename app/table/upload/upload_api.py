@@ -5,7 +5,7 @@ import aiofiles
 import tempfile
 import asyncio
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, Any, Optional
 
 from fastapi import APIRouter, UploadFile, File, Form, BackgroundTasks
@@ -18,13 +18,12 @@ from config import settings
 logger = logging.getLogger(__name__)
 upload_router = APIRouter()
 
-# 分块上传状态管理
+# 分块上传状态管理（单用户场景无需锁）
 chunk_sessions: Dict[str, Dict[str, Any]] = {}
-# 会话锁，防止并发修改
-chunk_sessions_lock = asyncio.Lock()
 
-# 会话超时时间（默认1小时）
-CHUNK_SESSION_TIMEOUT = timedelta(hours=1)
+# 单用户场景优化
+MAX_CONCURRENT_UPLOADS = 2  # 最多2个同时上传（防止误操作）
+upload_semaphore = asyncio.Semaphore(MAX_CONCURRENT_UPLOADS)
 
 
 async def process_csv_background_async(file_path: str, original_filename: str, data_type: str) -> None:
@@ -66,159 +65,98 @@ def process_csv_background(file_path: str, original_filename: str, data_type: st
                 logger.error(f"清理文件失败: {cleanup_error}")
 
 
-async def _cleanup_chunk_session(session_key: str) -> None:
-    """清理分块上传会话"""
-    async with chunk_sessions_lock:
-        if session_key in chunk_sessions:
-            session = chunk_sessions[session_key]
-            try:
-                import shutil
-                if os.path.exists(session["temp_dir"]):
-                    shutil.rmtree(session["temp_dir"])
-                logger.info(f"已清理会话 {session_key} 的临时目录")
-            except Exception as e:
-                logger.warning(f"清理临时目录失败: {e}")
-            finally:
-                del chunk_sessions[session_key]
-                logger.info(f"已删除会话: {session_key}")
-
-
-async def _cleanup_expired_sessions() -> None:
-    """清理过期的会话"""
-    now = datetime.now()
-    expired_keys = []
-    async with chunk_sessions_lock:
-        for key, session in chunk_sessions.items():
-            created_at = session.get("created_at")
-            if created_at and (now - created_at) > CHUNK_SESSION_TIMEOUT:
-                expired_keys.append(key)
-
-        for key in expired_keys:
-            session = chunk_sessions[key]
-            try:
-                import shutil
-                if os.path.exists(session["temp_dir"]):
-                    shutil.rmtree(session["temp_dir"])
-            except Exception as e:
-                logger.warning(f"清理过期会话临时目录失败: {e}")
-            finally:
-                del chunk_sessions[key]
-                logger.info(f"已清理过期会话: {key}")
+async def _cleanup_chunk_session(session_key: str, delay: int = 300) -> None:
+    """延迟清理分块上传会话（默认5分钟后清理）"""
+    await asyncio.sleep(delay)
+    if session_key in chunk_sessions:
+        session = chunk_sessions.pop(session_key, None)
+        if session:
+            # 清理临时目录（防止merge失败遗留）
+            import shutil
+            temp_dir = session.get("temp_dir")
+            if temp_dir and os.path.exists(temp_dir):
+                try:
+                    shutil.rmtree(temp_dir)
+                except Exception as e:
+                    logger.warning(f"清理临时目录失败: {e}")
+        logger.info(f"已延迟清理会话: {session_key}")
 
 
 @upload_router.post("/startChunkApi")
 async def start_chunk_api(chunk: ChunkStartRequest) -> Dict[str, Any]:
-    """
-    AMIS分块上传 - 开始上传接口
-    根据AMIS规范，需要返回包含key和uploadId的data对象
-    """
-    try:
-        logger.info(f"收到AMIS分块上传请求 - filename: {chunk.filename}, data_type: {chunk.data_type}")
+    """AMIS分块上传 - 开始上传接口"""
+    logger.info(f"收到AMIS分块上传请求 - filename: {chunk.filename}, data_type: {chunk.data_type}")
 
-        # 生成唯一标识
-        upload_id = str(uuid.uuid4())
-        # AMIS要求的key格式，使用uuid确保唯一性
-        key = f"{uuid.uuid4().hex}_{chunk.filename}"
+    if len(chunk_sessions) >= MAX_CONCURRENT_UPLOADS:
+        return {"status": 1, "msg": "已有上传任务进行中，请稍后"}
 
-        # 创建临时目录
-        temp_dir = tempfile.mkdtemp(prefix="amis_chunk_")
+    # 生成唯一标识
+    upload_id = str(uuid.uuid4())
+    key = f"{uuid.uuid4().hex}_{chunk.filename}"
+    temp_dir = tempfile.mkdtemp(prefix="amis_chunk_")
 
-        async with chunk_sessions_lock:
-            # 保存会话信息
-            chunk_sessions[key] = {
-                "upload_id": upload_id,
-                "filename": chunk.filename,
-                "data_type": chunk.data_type,
-                "temp_dir": temp_dir,
-                "chunks": {},  # 存储分块信息 {partNumber: chunk_path}
-                "created_at": datetime.now()
-            }
+    # 保存会话信息
+    chunk_sessions[key] = {
+        "upload_id": upload_id,
+        "filename": chunk.filename,
+        "data_type": chunk.data_type,
+        "temp_dir": temp_dir,
+        "chunks": {},
+    }
 
-        logger.info(f"AMIS分块上传会话创建: key={key}, upload_id={upload_id}")
+    logger.info(f"AMIS分块上传会话创建: key={key}, upload_id={upload_id}")
 
-        # 返回AMIS期望的格式
-        return {
-            "status": 0,
-            "data": {
-                "key": key,
-                "uploadId": upload_id,
-                "date": datetime.now().isoformat()
-            },
-            "msg": "分块上传会话创建成功"
-        }
-
-    except Exception as e:
-        logger.error(f"开始分块上传失败: {e}")
-        return {"status": 1, "msg": f"服务器错误: {str(e)}"}
+    return {
+        "status": 0,
+        "data": {"key": key, "uploadId": upload_id, "date": datetime.now().isoformat()},
+        "msg": "分块上传会话创建成功"
+    }
 
 
 @upload_router.post("/chunkApi")
 async def chunk_api(
         key: str = Form(..., description="上传会话key"),
-        partNumber: str = Form(..., description="分块序号"),
+        part_number: str = Form(..., description="分块序号"),
         file: UploadFile = File(..., description="分块文件")
 ) -> Dict[str, Any]:
-    """
-    AMIS分块上传 - 上传分块接口
-    AMIS会发送key和partNumber来标识每个分块
-    """
-    try:
-        async with chunk_sessions_lock:
-            session = chunk_sessions.get(key)
-            if not session:
-                logger.error(f"会话不存在: key={key}, partNumber={partNumber}, 当前所有会话keys={list(chunk_sessions.keys())}")
-                return {"status": 1, "msg": "无效的上传会话key"}
+    """AMIS分块上传 - 上传分块接口"""
+    session = chunk_sessions.get(key)
+    if not session:
+        return {"status": 1, "msg": "无效的上传会话key"}
 
-        # 转换分块序号
-        part_num = int(partNumber)
-        logger.info(f"收到分块上传: key={key}, partNumber={part_num}, filename={file.filename}")
+    if session.get("locked"):
+        logger.warning(f"会话已锁定，拒绝新分块: {key}")
+        return {"status": 1, "msg": "上传已完成，拒绝新分块"}
 
-        # 保存分块文件（流式写入，避免大文件内存峰值）
-        chunk_filename = f"part_{part_num:04d}.chunk"
-        chunk_path = os.path.join(session["temp_dir"], chunk_filename)
+    part_num = int(part_number)
+    logger.info(f"收到分块上传: key={key}, partNumber={part_num}")
 
-        chunk_size = 0
-        async with aiofiles.open(chunk_path, 'wb') as f:
-            while upload_chunk := await file.read(65536):  # 64KB chunks
-                await f.write(upload_chunk)
-                chunk_size += len(upload_chunk)
+    # 保存分块文件
+    chunk_filename = f"part_{part_num:04d}.chunk"
+    chunk_path = os.path.join(session["temp_dir"], chunk_filename)
 
-        async with chunk_sessions_lock:
-            # 重新获取会话，防止在写入期间被清理
-            if key not in chunk_sessions:
-                logger.error(f"会话在写入期间被清理: key={key}")
-                return {"status": 1, "msg": "会话已失效"}
+    chunk_size = 0
+    async with aiofiles.open(chunk_path, 'wb') as f:
+        while upload_chunk := await file.read(65536):
+            await f.write(upload_chunk)
+            chunk_size += len(upload_chunk)
 
-            # 记录分块信息
-            chunk_sessions[key]["chunks"][part_num] = {
-                "path": chunk_path,
-                "size": chunk_size,
-                "uploaded_at": datetime.now()
-            }
+    # 记录分块信息
+    session["chunks"][part_num] = {
+        "path": chunk_path,
+        "size": chunk_size,
+        "uploaded_at": datetime.now()
+    }
 
-        logger.info(f"分块 {part_num} 上传完成, key={key}, size={chunk_size}")
+    logger.info(f"分块 {part_num} 上传完成, key={key}, size={chunk_size}")
 
-        return {
-            "status": 0,
-            "msg": "分块上传成功",
-            "data": {
-                "partNumber": part_num,
-                "key": key
-            }
-        }
-
-    except ValueError:
-        logger.error(f"分块序号参数错误: {partNumber}")
-        return {"status": 1, "msg": "分块序号参数无效"}
-    except Exception as e:
-        logger.error(f"分块上传失败: key={key}, partNumber={partNumber}, error={e}", exc_info=True)
-        return {"status": 1, "msg": str(e)}
+    return {"status": 0, "msg": "分块上传成功", "data": {"partNumber": part_num, "key": key}}
 
 
 def merge_chunks_and_process(
-    session_key: str,
-    session_data: Dict[str, Any],
-    finish_chunk: FinishChunkRequest
+        session_key: str,
+        session_data: Dict[str, Any],
+        _: FinishChunkRequest = None
 ) -> None:
     """后台任务：合并分块文件并处理CSV"""
     import shutil
@@ -267,61 +205,40 @@ def merge_chunks_and_process(
 
 @upload_router.post("/finishChunkApi")
 async def finish_chunk_api(
-    background_tasks: BackgroundTasks,
-    finish_chunk: FinishChunkRequest,
+        background_tasks: BackgroundTasks,
+        finish_chunk: FinishChunkRequest,
 ) -> Dict[str, Any]:
-    """
-    AMIS分块上传 - 完成上传接口
-    立即返回响应，文件合并在后台任务中执行（避免504超时）
-    """
-    session_copy = None
-    try:
-        async with chunk_sessions_lock:
-            if finish_chunk.key not in chunk_sessions:
-                logger.error(f"finishChunkApi: 会话不存在, key={finish_chunk.key}")
-                return {"status": 1, "msg": "无效的上传会话key"}
+    """AMIS分块上传 - 完成上传接口（后台合并，避免504超时）"""
+    session = chunk_sessions.get(finish_chunk.key)
+    if not session:
+        return {"status": 1, "msg": "无效的上传会话key"}
 
-            session = chunk_sessions[finish_chunk.key]
+    # 验证分块完整性
+    expected = len(finish_chunk.partList)
+    actual = len(session["chunks"])
+    if actual < expected:
+        logger.warning(f"分块不完整: {actual}/{expected}, key={finish_chunk.key}")
+        return {"status": 1, "msg": f"分块未完成: {actual}/{expected}"}
 
-            # 验证分块完整性
-            expected_chunks = len(session["chunks"])
-            if expected_chunks == 0:
-                logger.error(f"finishChunkApi: 没有接收到任何分块, key={finish_chunk.key}")
-                return {"status": 1, "msg": "没有接收到任何分块"}
+    # 标记会话为已锁定，拒绝新分块
+    session["locked"] = True
+    session_copy = session.copy()
 
-            logger.info(f"接收完成上传请求: key={finish_chunk.key}, 分块数量={expected_chunks}")
+    # 后台合并
+    background_tasks.add_task(merge_chunks_and_process, finish_chunk.key, session_copy)
 
-            # 复制会话数据并立即删除会话，防止后续分块请求继续进来
-            session_copy = session.copy()
-            del chunk_sessions[finish_chunk.key]
-            logger.info(f"已从会话字典中删除: {finish_chunk.key}")
+    # 延迟删除会话（5分钟后）
+    background_tasks.add_task(_cleanup_chunk_session, finish_chunk.key, 300)
 
-        # 立即添加后台任务进行文件合并和处理
-        background_tasks.add_task(
-            merge_chunks_and_process,
-            finish_chunk.key,
-            session_copy,
-            finish_chunk
-        )
-
-        # 立即返回，不等待文件合并完成
-        return {
-            "status": 0,
-            "msg": "文件上传成功，正在后台合并和处理",
-            "data": {
-                "filename": session_copy['filename'],
-                "data_type": session_copy['data_type'],
-                "chunks_count": expected_chunks,
-                "status": "pending_merge"
-            }
+    return {
+        "status": 0,
+        "msg": "文件上传成功，正在后台处理",
+        "data": {
+            "filename": session_copy['filename'],
+            "chunks_count": actual,
+            "status": "processing"
         }
-
-    except Exception as e:
-        logger.error(f"完成分块上传失败: key={finish_chunk.key}, error={e}", exc_info=True)
-        # 如果出错，尝试清理会话
-        if finish_chunk.key in chunk_sessions:
-            await _cleanup_chunk_session(finish_chunk.key)
-        return {"status": 1, "msg": f"服务器错误: {str(e)}"}
+    }
 
 
 # 保持原有的传统上传接口和状态查询接口不变

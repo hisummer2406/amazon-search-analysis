@@ -33,8 +33,8 @@ class Settings(BaseSettings):
     FILE_SPLIT_LINES: int
 
     # 数据库连接优化配置
-    DB_POOL_SIZE: int = 100  # 连接池大小
-    DB_MAX_OVERFLOW: int = 50  # 最大溢出连接
+    DB_POOL_SIZE: int = 80  # 连接池大小
+    DB_MAX_OVERFLOW: int = 20  # 最大溢出连接
     DB_POOL_TIMEOUT: int = 30  # 连接超时时间（秒）
     DB_POOL_RECYCLE: int = 1800  # 连接回收时间
     DB_POOL_PRE_PING: bool = True  # 启用连接预检
