@@ -116,7 +116,7 @@ async def start_chunk_api(chunk: ChunkStartRequest) -> Dict[str, Any]:
 @upload_router.post("/chunkApi")
 async def chunk_api(
         key: str = Form(..., description="上传会话key"),
-        part_number: str = Form(..., description="分块序号"),
+        partNumber: str = Form(..., description="分块序号"),
         file: UploadFile = File(..., description="分块文件")
 ) -> Dict[str, Any]:
     """AMIS分块上传 - 上传分块接口"""
@@ -128,7 +128,7 @@ async def chunk_api(
         logger.warning(f"会话已锁定，拒绝新分块: {key}")
         return {"status": 1, "msg": "上传已完成，拒绝新分块"}
 
-    part_num = int(part_number)
+    part_num = int(partNumber)
     logger.info(f"收到分块上传: key={key}, partNumber={part_num}")
 
     # 保存分块文件
