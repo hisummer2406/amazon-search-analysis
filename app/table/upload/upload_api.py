@@ -198,6 +198,10 @@ def merge_chunks_and_process(
         try:
             if temp_dir and os.path.exists(temp_dir):
                 shutil.rmtree(temp_dir)
+
+                # 从全局字典中删除会话
+                chunk_sessions.pop(session_key, None)
+                
                 logger.info(f"已清理临时目录: {temp_dir}")
         except Exception as e:
             logger.warning(f"清理临时目录失败: {e}")
@@ -228,7 +232,7 @@ async def finish_chunk_api(
     background_tasks.add_task(merge_chunks_and_process, finish_chunk.key, session_copy)
 
     # 延迟删除会话（5分钟后）
-    background_tasks.add_task(_cleanup_chunk_session, finish_chunk.key, 300)
+    # background_tasks.add_task(_cleanup_chunk_session, finish_chunk.key, 300)
 
     return {
         "status": 0,
